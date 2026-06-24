@@ -171,7 +171,7 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
       <h2 style="font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-1);">${title}</h2>
       <p class="text-muted" style="font-size: var(--text-xs); font-weight: 500;">${i18n.t('video_available', { total: postsList.length })}</p>
     </div>
-    <div class="video-grid" id="saved-video-grid">
+    <div class="standard-grid" id="saved-video-grid">
       ${postsList.map((post, idx) => renderVideoCard(post, idx)).join('')}
     </div>
   `;
@@ -180,15 +180,15 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
   const grid = document.getElementById('saved-video-grid');
   if (grid) {
     grid.addEventListener('click', (e) => {
-      const actorChip = e.target.closest('.actor-chip');
-      if (actorChip) {
+      const actorTag = e.target.closest('.text-tag[data-actor]');
+      if (actorTag) {
         e.stopPropagation();
-        const actorName = decodeURIComponent(actorChip.dataset.actor);
+        const actorName = decodeURIComponent(actorTag.dataset.actor);
         window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
         return;
       }
 
-      const studioName = e.target.closest('.card-studio');
+      const studioName = e.target.closest('.text-tag[data-studio]');
       if (studioName) {
         e.stopPropagation();
         const studio = decodeURIComponent(studioName.dataset.studio);
@@ -488,12 +488,13 @@ function navigate(urlPath) {
   if (typeof window.missavJUpdateTelegramButton === 'function') {
     window.missavJUpdateTelegramButton();
   }
+  
+  // Re-translate search placeholders and generic text upon navigation
+  i18n.translateStaticUI();
 
-  // Auto-close mobile sidebar drawer on navigation
-  const sidebar = document.getElementById('sidebar');
-  const sidebarOverlay = document.getElementById('sidebar-overlay');
-  if (sidebar) sidebar.classList.remove('mobile-open');
-  if (sidebarOverlay) sidebarOverlay.classList.remove('visible');
+  // Close mobile search/nav overlays
+  const mobileSearch = document.getElementById('mobile-search-overlay');
+  if (mobileSearch) mobileSearch.classList.remove('visible');
 
   // Normalize path slug watch routes (e.g. /watch/abp-123-sakura-imai-82597 -> /watch)
   let matchedRoutePath = routePath;
@@ -661,10 +662,10 @@ export function closeFloatingPlayer() {
  * Synchronizes selected visual state styling highlights on sidebar items
  */
 function highlightActiveSidebarItem(activePath, activeSearch = '') {
-  const sidebarLinks = document.querySelectorAll('.sidebar-nav a, .sidebar-nav button');
+  const navLinks = document.querySelectorAll('.desktop-nav-link, .bottom-nav-link');
   const activeFullPath = activePath + activeSearch; // e.g. "/category?name=Uncensored"
   
-  sidebarLinks.forEach(link => {
+  navLinks.forEach(link => {
     const href = link.getAttribute('href') || '';
     const cleanHref = href.replace('#', ''); // Remove hash prefix → "/category?name=Uncensored"
     const cleanHrefPath = cleanHref.split('?')[0]; // Just the path → "/category"
@@ -1423,31 +1424,20 @@ function setupLegalModals() {
  * Initializes global click events and mobile sidebar states
  */
 function initGlobalEvents() {
-  const menuBtn = document.getElementById('menu-btn');
-  const sidebar = document.getElementById('sidebar');
-  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const searchInput = document.getElementById('header-search-input');
+  const searchBtn = document.getElementById('header-search-btn');
+  const mobileSearchBtn = document.getElementById('mobile-search-btn');
   
-  if (menuBtn && sidebar) {
-    menuBtn.addEventListener('click', () => {
-      if (window.innerWidth < 768) {
-        sidebar.classList.toggle('mobile-open');
-        if (sidebarOverlay) sidebarOverlay.classList.toggle('visible');
-      } else {
-        sidebar.classList.toggle('collapsed');
-        document.body.classList.toggle('sidebar-collapsed-layout');
+  if (mobileSearchBtn) {
+    mobileSearchBtn.addEventListener('click', () => {
+      // For mobile, maybe we just redirect to search page directly or show a prompt.
+      // Let's prompt for now to keep it simple, since search bar is hidden.
+      const query = prompt(i18n.t('search_placeholder') || 'Search videos...');
+      if (query && query.trim()) {
+        window.missavJNavigate(`/search?q=${encodeURIComponent(query.trim())}`);
       }
     });
   }
-  
-  if (sidebarOverlay) {
-    sidebarOverlay.addEventListener('click', () => {
-      sidebar.classList.remove('mobile-open');
-      sidebarOverlay.classList.remove('visible');
-    });
-  }
-
-  const searchInput = document.getElementById('header-search-input');
-  const searchBtn = document.getElementById('header-search-btn');
   
   const handleSearchSubmit = () => {
     const activeSearchInput = document.getElementById('header-search-input');
@@ -1718,14 +1708,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupKeyboardHotkeys();
   setupLegalModals();
   Analytics.init(); // GA4 tracking — configure ID in analytics.js
-  
-  // Collapse sidebar by default on tablet viewports (768px to 1023px)
-  const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
-  const sidebar = document.getElementById('sidebar');
-  if (isTablet && sidebar) {
-    sidebar.classList.add('collapsed');
-    document.body.classList.add('sidebar-collapsed-layout');
-  }
   
   // Sync selected language segmentation state
   if (lang) {

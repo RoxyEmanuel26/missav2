@@ -119,52 +119,63 @@ export function renderVideoCard(post, index = 0) {
 
   // Format Studio link
   const studioMarkup = safeStudio 
-    ? `<span class="card-studio" data-studio="${encodeURIComponent(safeStudio)}">${safeStudio}</span>`
-    : `<span class="card-studio text-muted" data-studio="Other">${i18n.t('unknown_studio')}</span>`;
+    ? `<span class="text-tag" data-studio="${encodeURIComponent(safeStudio)}">${safeStudio}</span>`
+    : `<span class="text-tag text-muted" data-studio="Other">${i18n.t('unknown_studio')}</span>`;
 
   // Format views
   const viewsCount = post.views ? parseInt(post.views, 10) : 0;
   const viewsFormatted = viewsCount.toLocaleString(i18n.getLang());
 
-  // Staggered animation delay: cascades cards sequentially at 45ms offsets
+  // Staggered animation delay
   const animationStyle = `style="animation-delay: calc(${index % 24} * 45ms);"`;
 
-  // Sanitize and clean up ampersands inside embed URLs
-  const rawEmbedUrl = (post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&');
-  const safeEmbedUrl = ui.escapeHTML(rawEmbedUrl);
+  const safeEmbedUrl = ui.escapeHTML((post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&'));
 
-  return `
-    <article class="video-card fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
-      <div class="card-thumb">
-        <img 
-          src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
-          alt="${safeTitle}" 
-          loading="lazy" 
-          decoding="async"
-          width="320" 
-          height="180"
-          onload="this.classList.add('loaded')"
-          onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
-        >
-        ${uncensoredBadge}
-        ${durationBadge}
-        ${hdBadge}
-        <div class="card-hover-overlay">▶ ${i18n.t('play_video')}</div>
-      </div>
-      <div class="card-info">
-        <h3 class="card-title" title="${safeTitle}" data-original-title="${ui.escapeHTML(originalTitle)}">${safeTitle}</h3>
-        <div class="card-meta">
-          ${studioMarkup}
-          <span class="card-dot">•</span>
-          <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
+  const cardVariant = index === 0 ? 'card-cinematic' : 'card-editorial';
+
+  // For cinematic card, overlay metadata is used. For editorial, it's below the thumb.
+  if (index === 0) {
+    return `
+      <article class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+        <div class="card-thumb">
+          <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';">
+          ${uncensoredBadge ? `<span class="badge badge-uncensored">${i18n.t('badge_uncensored')}</span>` : ''}
+          ${durationBadge ? `<span class="badge badge-duration">${safeDuration}</span>` : ''}
+          ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
         </div>
-        <div class="card-actors">
-          ${actorsMarkup}
+        <div class="card-info-overlay">
+          <div class="card-meta">
+            ${studioMarkup}
+            <span class="card-dot">•</span>
+            <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
+            <span class="card-code">${safeCode}</span>
+          </div>
+          <h3 class="card-title" title="${safeTitle}">${safeTitle}</h3>
         </div>
-        <div class="card-code">${safeCode}</div>
-      </div>
-    </article>
-  `;
+      </article>
+    `;
+  } else {
+    return `
+      <article class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+        <div class="card-thumb">
+          <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';">
+          ${uncensoredBadge ? `<span class="badge badge-uncensored">${i18n.t('badge_uncensored')}</span>` : ''}
+          ${durationBadge ? `<span class="badge badge-duration">${safeDuration}</span>` : ''}
+          ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
+        </div>
+        <div class="card-info">
+          <h3 class="card-title" title="${safeTitle}">${safeTitle}</h3>
+          <div class="card-meta">
+            ${studioMarkup}
+            <span class="card-dot">•</span>
+            <span class="card-code">${safeCode}</span>
+            <span class="card-dot">•</span>
+            <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
+          </div>
+        </div>
+      </article>
+    `;
+  }
 }
 
 /**
@@ -266,20 +277,22 @@ export async function init(filters = {}) {
   }
 
   mainApp.innerHTML = `
-    <!-- Sticky Horizontal Filter Bar Container -->
-    <div id="filter-bar-container" class="filter-bar-container"></div>
-    
     <!-- Dynamic Taxonomy Banner -->
     ${taxonomyBannerHtml}
     
-    <!-- Info bar & total video count tracking -->
-    <div class="feed-info-bar">
-      <div class="video-total-count" id="video-total-count">${i18n.t('loading_videos_count')}</div>
-      <div class="page-track" id="page-track">${i18n.t('page_format', { current: 1, total: 1 })}</div>
+    <div class="feed-controls-wrapper">
+      <!-- Sticky Horizontal Filter Bar Container -->
+      <div id="filter-bar-container" class="filter-bar-container"></div>
+      
+      <!-- Info bar & total video count tracking -->
+      <div class="feed-info-bar">
+        <div class="video-total-count" id="video-total-count">${i18n.t('loading_videos_count')}</div>
+        <div class="page-track" id="page-track">${i18n.t('page_format', { current: 1, total: 1 })}</div>
+      </div>
     </div>
     
     <!-- Main Video Grid container -->
-    <div class="video-grid" id="video-grid"></div>
+    <div class="editorial-grid" id="video-grid"></div>
 
     <!-- Infinite Scroll Sentinel & Loading indicator -->
     <div id="infinite-loader" class="infinite-loader hidden">
@@ -396,9 +409,9 @@ async function fetchAndRenderFeed(isInitial = false) {
 
             // Build cards list markup applying cascade staggered delays
             let cardsHtml = '';
-            uniqueRetryPosts.forEach((post, idx) => {
+            uniqueRetryPosts.forEach((post) => {
               totalRenderedVideos++;
-              cardsHtml += renderVideoCard(post, idx);
+              cardsHtml += renderVideoCard(post, totalRenderedVideos - 1);
               if (totalRenderedVideos % 12 === 0) {
                 cardsHtml += renderInlineAdCard(totalRenderedVideos);
               }
@@ -429,9 +442,9 @@ async function fetchAndRenderFeed(isInitial = false) {
 
     // Build cards list markup applying cascade staggered delays
     let cardsHtml = '';
-    uniquePosts.forEach((post, idx) => {
+    uniquePosts.forEach((post) => {
       totalRenderedVideos++;
-      cardsHtml += renderVideoCard(post, idx);
+      cardsHtml += renderVideoCard(post, totalRenderedVideos - 1);
       if (totalRenderedVideos % 12 === 0) {
         cardsHtml += renderInlineAdCard(totalRenderedVideos);
       }
@@ -624,8 +637,8 @@ export function bindHoverPreviews(grid) {
  */
 function renderInlineAdCard(adIndex) {
   return `
-    <div class="grid-ad-container" style="grid-column: 1 / -1; display: flex; justify-content: center; width: 100%;">
-      <div class="ad-placement" id="grid-ad-slot-${adIndex}"></div>
+    <div class="grid-ad-container" style="grid-column: 1 / -1; display: flex; justify-content: center; width: 100%; margin: var(--space-6) 0;">
+      <div class="ad-placement" id="grid-ad-slot-${adIndex}" style="min-height: 90px; background: rgba(0,0,0,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; max-width: 100%;"></div>
     </div>
   `;
 }

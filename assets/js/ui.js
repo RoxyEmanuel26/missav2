@@ -55,10 +55,10 @@ const ui = {
     if (!mainApp) return;
 
     mainApp.innerHTML = `
-      <div class="video-grid" id="video-grid">
+      <div class="editorial-grid" id="video-grid">
         ${Array(count).fill(0).map(() => `
-          <div class="video-card skeleton-card">
-            <div class="skeleton skeleton-image"></div>
+          <div class="video-card card-base card-editorial skeleton-card">
+            <div class="skeleton skeleton-image card-thumb"></div>
             <div class="card-info">
               <div class="skeleton skeleton-text" style="width:90%"></div>
               <div class="skeleton skeleton-text" style="width:65%"></div>
@@ -79,8 +79,8 @@ const ui = {
   showSkeletonsInElement(element, count = 4) {
     if (!element) return;
     element.innerHTML = Array(count).fill(0).map(() => `
-      <div class="video-card skeleton-card-row">
-        <div class="skeleton skeleton-image-row"></div>
+      <div class="video-card card-base card-compact skeleton-card-row">
+        <div class="skeleton skeleton-image-row card-thumb"></div>
         <div class="card-info-row">
           <div class="skeleton skeleton-text" style="width:85%"></div>
           <div class="skeleton skeleton-text" style="width:50%"></div>

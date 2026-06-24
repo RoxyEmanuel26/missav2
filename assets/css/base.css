@@ -1,103 +1,100 @@
 /*
- * MISSAV-J — CSS Reset, Typography, & Theme Tokens (Optimized)
- * Mengatur variabel global (Light & Dark dengan glassmorphism), font, scrollbar, dan reset.
+ * MISSAV-J — Premium Design System (Obsidian Edition)
+ * Core CSS Variables, Typography, & Fluid Resets
  */
 
 :root {
-  /* Premium Dark Cinematic Palette */
-  --color-bg: #0A0A0B;              /* Ultra-deep cinematic black */
-  --color-surface: #121214;         /* Floating surface base */
-  --color-surface-2: #1C1C1F;       /* Hover state surface */
-  --color-surface-3: #27272B;       /* Active state surface */
-  --color-border: rgba(255, 255, 255, 0.06); 
-  --color-border-strong: rgba(255, 255, 255, 0.12);
-  --color-text: #F1F1F3;            /* High contrast but soft white */
-  --color-text-muted: #A1A1A8;      /* Secondary text */
-  --color-text-faint: #6A6A73;      /* Subtle UI text */
+  /* Obsidian Dark Cinematic Palette */
+  --color-bg: #030303;              /* Pure dark abyss */
+  --color-surface: #0A0A0A;         /* Base surface */
+  --color-surface-2: #121212;       /* Elevated surface */
+  --color-surface-3: #1A1A1A;       /* Interactive surface */
   
-  /* Brand Accents */
-  --color-accent: #E11D48;          /* Rose Crimson - Premium */
-  --color-accent-hover: #F43F5E;
-  --color-accent-soft: rgba(225, 29, 72, 0.12);
-  --color-blue: #3B82F6;            /* Trustworthy link blue */
+  --color-border: rgba(255, 255, 255, 0.04); 
+  --color-border-strong: rgba(255, 255, 255, 0.08);
+  
+  --color-text: #F8F8F8;            /* Crisp white */
+  --color-text-muted: #888888;      /* Elegant grey for metadata */
+  --color-text-faint: #444444;      /* Background elements */
+  
+  /* Electric Accents */
+  --color-accent: #00F0FF;          /* Electric Cyan */
+  --color-accent-hover: #5CFFFF;
+  --color-accent-soft: rgba(0, 240, 255, 0.1);
+  --color-blue: #3B82F6;            
   --color-success: #10B981;
   --color-warning: #F59E0B;
+  --color-danger: #E11D48;
 
-  /* Sophisticated Glassmorphism */
-  --glass-bg: rgba(10, 10, 11, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.04);
-  --glass-blur: blur(20px) saturate(180%);
+  /* Premium Glassmorphism */
+  --glass-bg: rgba(3, 3, 3, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.03);
+  --glass-blur: blur(24px) saturate(180%);
 
-  /* Fluid Premium Typography Scale (Inter) */
-  --text-xs: clamp(0.75rem, 0.72rem + 0.15vw, 0.8125rem);
-  --text-sm: clamp(0.875rem, 0.84rem + 0.18vw, 0.9375rem);
-  --text-base: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
-  --text-lg: clamp(1.125rem, 1.08rem + 0.3vw, 1.25rem);
-  --text-xl: clamp(1.375rem, 1.25rem + 0.8vw, 1.75rem);
-  --text-2xl: clamp(1.75rem, 1.5rem + 1.2vw, 2.25rem);
+  /* Typography Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3rem;
 
-  /* Mathematical Spacing System */
-  --space-1: 0.25rem;  /* 4px */
-  --space-2: 0.5rem;   /* 8px */
-  --space-3: 0.75rem;  /* 12px */
-  --space-4: 1rem;     /* 16px */
-  --space-5: 1.25rem;  /* 20px */
-  --space-6: 1.5rem;   /* 24px */
-  --space-8: 2rem;     /* 32px */
-  --space-10: 2.5rem;  /* 40px */
-  --space-12: 3rem;    /* 48px */
-  --space-16: 4rem;    /* 64px */
+  /* Geometric Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
 
-  /* Refined Radii */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Radii - Moving to sharper, editorial corners */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
-  /* Dimensions */
-  --sidebar-width: 256px;
-  --sidebar-collapsed: 80px;
-  --header-height: 64px;
+  /* Layout Constants */
+  --header-height: 72px;
+  --bottom-nav-height: 64px;
 
-  /* Motion Design (Cinematic Easing) */
+  /* Cinematic Motion */
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --transition: 300ms var(--ease-out-expo);
-  --transition-fast: 150ms var(--ease-out-expo);
+  --transition: 400ms var(--ease-out-expo);
+  --transition-fast: 200ms var(--ease-out-expo);
   
-  /* Layered Depth & Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
-  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 15px rgba(225, 29, 72, 0.15);
+  /* Ambient Lighting Shadows */
+  --shadow-ambient: 0 0 40px -10px rgba(0, 0, 0, 0.8);
+  --shadow-glow: 0 0 20px rgba(0, 240, 255, 0.15);
+  --shadow-elevation: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Light Theme overrides */
+/* Light Theme overrides - Kept minimal as primary focus is Dark Premium */
 :root[data-theme="light"] {
-  --color-bg: #FAFAFA;
-  --color-surface: #FFFFFF;
-  --color-surface-2: #F4F4F5;
-  --color-surface-3: #E4E4E7;
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-strong: rgba(0, 0, 0, 0.15);
-  --color-text: #09090B;
-  --color-text-muted: #52525B;
-  --color-text-faint: #A1A1AA;
-  --color-accent: #E11D48;
-  --color-accent-hover: #BE123C;
-  --color-accent-soft: rgba(225, 29, 72, 0.08);
-  --color-blue: #2563EB;
+  --color-bg: #FFFFFF;
+  --color-surface: #F8F8F8;
+  --color-surface-2: #F0F0F0;
+  --color-surface-3: #E8E8E8;
+  --color-border: rgba(0, 0, 0, 0.05);
+  --color-border-strong: rgba(0, 0, 0, 0.1);
+  --color-text: #111111;
+  --color-text-muted: #666666;
+  --color-text-faint: #999999;
   
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  /* In light mode, Cyan is hard to read. Use deep electric blue */
+  --color-accent: #0055FF;
+  --color-accent-hover: #0033CC;
+  --color-accent-soft: rgba(0, 85, 255, 0.08);
 
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(0, 0, 0, 0.05);
-  --glass-blur: blur(20px) saturate(180%);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.04);
 }
 
-/* Core reset */
+/* Base Reset */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -111,35 +108,35 @@ html {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', -apple-system, sans-serif;
   font-size: var(--text-sm);
   background-color: var(--color-bg);
   color: var(--color-text);
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
-  line-height: 1.6;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Premium Focus Flow Accessibility */
+/* Editorial Serif Fonts for Headlines */
+h1, h2, h3, .font-serif {
+  font-family: 'Playfair Display', 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Accessibility Focus */
 *:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
-a:focus-visible, button:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 4px;
-}
-
-/* Scrollbar styling */
+/* Clean Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -156,16 +153,15 @@ a:focus-visible, button:focus-visible {
 }
 
 a {
-  color: var(--color-blue);
+  color: var(--color-text);
   text-decoration: none;
   transition: color var(--transition);
 }
 
 a:hover {
-  text-decoration: underline;
+  color: var(--color-accent);
 }
 
-/* Interactive elements */
 button, input, select, textarea {
   font-family: inherit;
   font-size: inherit;
@@ -188,11 +184,6 @@ img {
   display: block;
 }
 
-iframe {
-  border: none;
-}
-
-/* Global utility classes */
 .hidden {
   display: none !important;
 }
@@ -210,9 +201,6 @@ iframe {
   overflow: hidden;
 }
 
-/* ==========================================
-   Accessibility & Performance Fallbacks
-   ========================================== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

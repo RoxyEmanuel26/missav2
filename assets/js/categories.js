@@ -88,7 +88,7 @@ export function init() {
       </div>
     </div>
     
-    <div class="actors-grid all-categories-grid" id="categories-grid"></div>
+    <div class="categories-grid" id="categories-grid"></div>
   `;
 
   // Render all categories initially

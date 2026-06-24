@@ -80,11 +80,6 @@
   <!-- Sticky Top Header -->
   <header class="header">
     <div class="header-left">
-      <!-- Hamburger Menu Button -->
-      <button class="menu-btn" id="menu-btn" title="Menu Utama" aria-label="Toggle Sidebar">
-        ☰
-      </button>
-      
       <!-- Logo MISSAV-J -->
       <a href="/" class="logo" id="logo-branding">
         <span class="logo-text">MISS<span class="logo-accent">AV-J</span></span>
@@ -114,6 +109,13 @@
 
     <!-- Actions & Toggles -->
     <div class="header-right">
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav">
+        <a href="/" class="desktop-nav-link" data-i18n="nav_home">Beranda</a>
+        <a href="/trending" class="desktop-nav-link" data-i18n="nav_trending">Trending</a>
+        <a href="/actors" class="desktop-nav-link" data-i18n="nav_all_actors">Aktor</a>
+        <a href="/categories" class="desktop-nav-link" data-i18n="nav_all_categories">Kategori</a>
+      </nav>
 
       <!-- Dark/Light Theme Switcher -->
       <button class="header-action-btn" id="theme-toggle-btn" title="Toggle Tema">
@@ -138,84 +140,6 @@
   <!-- App Wrapper -->
   <div class="app-container">
     
-    <!-- Collapsible left sidebar navigation -->
-    <aside class="sidebar" id="sidebar">
-      <nav class="sidebar-nav">
-        <!-- Rute utama -->
-        <a href="/" class="active">
-          <span class="nav-icon">🏠</span>
-          <span class="nav-text" data-i18n="nav_home">Beranda</span>
-        </a>
-        <a href="/trending">
-          <span class="nav-icon">🔥</span>
-          <span class="nav-text" data-i18n="nav_trending">Populer (Trending)</span>
-        </a>
-        <a href="/recent">
-          <span class="nav-icon">🕐</span>
-          <span class="nav-text" data-i18n="nav_recent">Terbaru</span>
-        </a>
-        
-        <div class="sidebar-divider"></div>
-        
-        <!-- Section Jelajahi -->
-        <div class="sidebar-section-title" data-i18n="sidebar_explore">Jelajahi</div>
-        <a href="/actors">
-          <span class="nav-icon">🎭</span>
-          <span class="nav-text" data-i18n="nav_all_actors">All Actors</span>
-        </a>
-        <a href="/categories">
-          <span class="nav-icon">📁</span>
-          <span class="nav-text" data-i18n="nav_all_categories">All Categories</span>
-        </a>
-
-        <div class="sidebar-divider"></div>
-
-        <!-- Section Koleksi Saya -->
-        <div class="sidebar-section-title" data-i18n="sidebar_my_collections">Koleksi Saya</div>
-        <a href="/watch-later">
-          <span class="nav-icon">📁</span>
-          <span class="nav-text" data-i18n="nav_watch_later">Tonton Nanti</span>
-        </a>
-        <a href="/history">
-          <span class="nav-icon">🕐</span>
-          <span class="nav-text" data-i18n="nav_history">Riwayat Sesi</span>
-        </a>
-
-        <div class="sidebar-divider"></div>
-
-        <!-- Section Info Tambahan -->
-        <div class="sidebar-section-title" data-i18n="sidebar_other_info">Informasi Lain</div>
-        <a href="/popular-actors">
-          <span class="nav-icon">🎭</span>
-          <span class="nav-text" data-i18n="nav_actors">Aktor Populer</span>
-        </a>
-        <a href="/studios">
-          <span class="nav-icon">🎬</span>
-          <span class="nav-text" data-i18n="nav_studios">Studio Populer</span>
-        </a>
-
-        <div class="sidebar-divider"></div>
-
-        <!-- Section Legal Kepatuhan ExoClick -->
-        <div class="sidebar-section-title" data-i18n="legal_section_title">Legal</div>
-        <button id="sidebar-legal-2257-btn">
-          <span class="nav-icon">📜</span>
-          <span class="nav-text" data-i18n="legal_2257_link">18 U.S.C. 2257</span>
-        </button>
-        <button id="sidebar-legal-dmca-btn">
-          <span class="nav-icon">🛡️</span>
-          <span class="nav-text" data-i18n="legal_dmca_link">DMCA Policy</span>
-        </button>
-        <button id="sidebar-legal-contact-btn">
-          <span class="nav-icon">✉️</span>
-          <span class="nav-text" data-i18n="legal_contact_link">Contact Us</span>
-        </button>
-      </nav>
-    </aside>
-
-    <!-- Overlay backdrop ketika mobile sidebar terbuka -->
-    <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
     <!-- Main Content Panel -->
     <main class="main-content" id="main-content">
       <!-- Global Top Ad Banner Placement (Ditinjau secara responsif) -->
@@ -233,6 +157,44 @@
         </div>
       </div>
     </main>
+    
+    <!-- Mobile Bottom Navigation -->
+    <nav class="bottom-nav" id="bottom-nav">
+      <ul class="bottom-nav-list">
+        <li class="bottom-nav-item">
+          <a href="/" class="bottom-nav-link active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span data-i18n="nav_home">Home</span>
+          </a>
+        </li>
+        <li class="bottom-nav-item">
+          <a href="/trending" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            <span data-i18n="nav_trending">Trending</span>
+          </a>
+        </li>
+        
+        <!-- Center Floating Search Button -->
+        <li class="bottom-nav-item center-action">
+          <button class="bottom-nav-action-btn" id="mobile-search-btn" title="Search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </button>
+        </li>
+        
+        <li class="bottom-nav-item">
+          <a href="/categories" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span data-i18n="nav_all_categories">Categories</span>
+          </a>
+        </li>
+        <li class="bottom-nav-item">
+          <a href="/actors" class="bottom-nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 1 0 5 5 5 5 0 0 0-5-5z"></path><path d="M2.5 21a9.5 9.5 0 0 1 19 0"></path></svg>
+            <span data-i18n="nav_all_actors">Actors</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
   </div>
 
   <!-- Adsterra Popunder Script Placeholder -->
