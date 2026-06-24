@@ -189,10 +189,10 @@ async function fetchAndRenderSearch(isInitial = false) {
     const lang = i18n.getLang();
     
     // If user is not using English, translate their search query TO English
-    // so the MissAV backend can actually find the videos.
+    // because the apiJAV backend stores original titles in English.
     if (apiQuery && lang !== 'en') {
       try {
-        apiQuery = await i18n.translateText(apiQuery, 'en');
+        apiQuery = await i18n.translateText(apiQuery, 'en', 'auto');
       } catch (e) {
         console.warn('Query translation failed:', e);
       }

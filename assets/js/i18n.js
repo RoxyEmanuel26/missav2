@@ -825,14 +825,14 @@ function rotateEndpoint() {
  * Translates English text to a target language asynchronously using a free Google Translate API.
  * Uses localStorage to cache translations for speed and rate-limit prevention.
  */
-export async function translateText(text, targetLang) {
+export async function translateText(text, targetLang, sourceLang = 'en') {
   if (!text) return '';
-  if (!targetLang || targetLang === 'en') return text;
+  if (sourceLang === targetLang && sourceLang !== 'auto') return text;
 
   const cleanedText = decodeHTMLEntities(text).trim();
   if (!cleanedText) return '';
 
-  const cacheKey = `${targetLang}:${cleanedText}`;
+  const cacheKey = `${sourceLang}-${targetLang}:${cleanedText}`;
   if (fullTitleTranslations[cacheKey]) {
     return fullTitleTranslations[cacheKey];
   }
@@ -841,7 +841,7 @@ export async function translateText(text, targetLang) {
   let attempt = 0;
   while (attempt < TRANSLATION_ENDPOINTS.length) {
     const endpoint = TRANSLATION_ENDPOINTS[activeEndpointIndex];
-    const url = `https://${endpoint.domain}/translate_a/single?client=${endpoint.client}&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(cleanedText)}`;
+    const url = `https://${endpoint.domain}/translate_a/single?client=${endpoint.client}&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(cleanedText)}`;
     try {
       const res = await fetch(url);
       if (res.status === 429) {
