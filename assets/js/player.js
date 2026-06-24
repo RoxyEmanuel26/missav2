@@ -398,7 +398,7 @@ export function renderPostMeta(post, id) {
   // Setup Download Button with redirect link
   if (downloadBtn) {
     const downloadLinks = [
-      "#" // "https://glamournakedemployee.com/pbp6j50d?key=15cc5432b0b350a5b8340131f0211a59" -- Aktifkan saat deploy
+      "https://glamournakedemployee.com/pbp6j50d?key=15cc5432b0b350a5b8340131f0211a59"
     ];
     const randomUrl = downloadLinks[Math.floor(Math.random() * downloadLinks.length)];
     downloadBtn.href = randomUrl;

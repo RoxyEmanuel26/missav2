@@ -9,10 +9,10 @@ import ui from './ui.js?v=2.2.2';
 
 // Konfigurasi Kunci Iklan
 window.missavJAdConfig = {
-  popunderEnabled: false, // Ubah ke true saat deploy (aktifkan popunder)
-  socialBarEnabled: false, // Ubah ke true saat deploy (aktifkan social bar)
+  popunderEnabled: true,
+  socialBarEnabled: true,
   // Tentukan provider banner: 'exoclick', 'adsterra', atau 'none' untuk mematikan
-  bannerProvider: 'none', // Ubah ke 'adsterra' saat deploy (aktifkan banner)
+  bannerProvider: 'adsterra',
   // Ganti dengan Key asli Adsterra dari dashboard Anda
   topBannerKey: 'cea3767fe96bdad2805aa088e7a0f425',         // Banner 728x90
   topMobileBannerKey: '2fc8df7e7c902ed4f5d311b0ed069682',   // Banner 320x50
