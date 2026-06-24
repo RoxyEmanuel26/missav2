@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f0f">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="google-site-verification" content="p399rUdcNUuJI12wyyhrNzfnJKheRQHy106DN-YWJsg" />
+  <meta name="6a97888e-site-verification" content="a1be0a661f577bbd2c3eb82350a10d97">
+  <meta name="yandex-verification" content="69f8d52e19749e09" />
+  <meta http-equiv="Delegate-CH" content="Sec-CH-UA https://s.magsrv.com; Sec-CH-UA-Mobile https://s.magsrv.com; Sec-CH-UA-Arch https://s.magsrv.com; Sec-CH-UA-Model https://s.magsrv.com; Sec-CH-UA-Platform https://s.magsrv.com; Sec-CH-UA-Platform-Version https://s.magsrv.com; Sec-CH-UA-Bitness https://s.magsrv.com; Sec-CH-UA-Full-Version-List https://s.magsrv.com; Sec-CH-UA-Full-Version https://s.magsrv.com;">
+  
+  <!-- SEO Meta Tags -->
+  <title>MISSAV-J — Immersive JAV Streaming & Video Feed</title>
+  <meta name="description" id="meta-description" content="Temukan tren video streaming terbaik dengan antarmuka YouTube-inspired dark mode premium. MISSAV-J menghadirkan navigasi single-page app super cepat.">
+  <meta name="author" content="MISSAV-J">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <link rel="canonical" id="canonical-url" href="https://www.missav-j.web.id">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" id="og-type" content="website">
+  <meta property="og:site_name" content="MISSAV-J">
+  <meta property="og:url" id="og-url" content="https://www.missav-j.web.id">
+  <meta property="og:title" id="og-title" content="MISSAV-J — Premium Video Streaming Feed">
+  <meta property="og:description" id="og-description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
+  <meta property="og:image" id="og-image" content="/assets/images/logo.png">
+  <meta property="og:locale" id="og-locale" content="en_US">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" id="twitter-card" content="summary_large_image">
+  <meta name="twitter:title" id="twitter-title" content="MISSAV-J — Premium Video Streaming Feed">
+  <meta name="twitter:description" id="twitter-description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
+  <meta name="twitter:image" id="twitter-image" content="/assets/images/logo.png">
+  <meta property="og:video" id="og-video" content="">
+  <meta property="og:video:type" content="text/html">
+  <meta property="og:video:width" content="1280">
+  <meta property="og:video:height" content="720">
+  <meta name="twitter:player" id="twitter-player" content="">
+  <meta name="twitter:player:width" content="1280">
+  <meta name="twitter:player:height" content="720">
+
+  <!-- JSON-LD Structured Data (dynamically updated by app.js) -->
+  <script type="application/ld+json" id="json-ld-data">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "MISSAV-J",
+    "url": "https://www.missav-j.web.id",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://www.missav-j.web.id/en/search?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <!-- Google Fonts - Roboto & Playfair Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+  <!-- Premium Modular Stylesheets -->
+  <link rel="stylesheet" href="/assets/css/base.css?v=2.2.2">
+  <link rel="stylesheet" href="/assets/css/layout.css?v=2.2.2">
+  <link rel="stylesheet" href="/assets/css/components.css?v=2.2.2">
+  <link rel="stylesheet" href="/assets/css/player.css?v=2.2.2">
+</head>
+<body>
+
+  <!-- Sticky Top Header -->
+  <header class="header">
+    <div class="header-left">
+      <!-- Hamburger Menu Button -->
+      <button class="menu-btn" id="menu-btn" title="Menu Utama" aria-label="Toggle Sidebar">
+        ☰
+      </button>
+      
+      <!-- Logo MISSAV-J -->
+      <a href="/" class="logo" id="logo-branding">
+        <span class="logo-text">MISS<span class="logo-accent">AV-J</span></span>
+      </a>
+    </div>
+
+    <!-- Centered Search Bar -->
+    <div class="header-center">
+      <div class="search-container">
+        <input 
+          type="text" 
+          id="header-search-input" 
+          class="search-input" 
+          placeholder="Cari video, aktor, studio, kode..." 
+          data-i18n-placeholder="search_placeholder"
+          autocomplete="off" 
+          spellcheck="false"
+        >
+        <button id="header-search-btn" class="search-btn" title="Cari" aria-label="Eksekusi Pencarian">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Actions & Toggles -->
+    <div class="header-right">
+
+      <!-- Dark/Light Theme Switcher -->
+      <button class="header-action-btn" id="theme-toggle-btn" title="Toggle Tema">
+        <!-- SVG Diisi Dinamis oleh ui.js -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"></circle>
+        </svg>
+      </button>
+      
+      <!-- Flag Language Dropdown Popover (Premium circular style) -->
+      <div class="lang-dropdown" id="lang-dropdown">
+        <button class="lang-trigger" id="lang-dropdown-trigger" title="Change Language" aria-haspopup="true" aria-expanded="false">
+          <img id="lang-trigger-flag" src="/assets/pics/united-kingdom.png" alt="English">
+        </button>
+        <div class="lang-menu hidden" id="lang-dropdown-menu">
+          <!-- Diisi secara dinamis oleh app.js berdasarkan i18n.LANGS -->
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+    
+    <!-- Collapsible left sidebar navigation -->
+    <aside class="sidebar" id="sidebar">
+      <nav class="sidebar-nav">
+        <!-- Rute utama -->
+        <a href="/" class="active">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-text" data-i18n="nav_home">Beranda</span>
+        </a>
+        <a href="/trending">
+          <span class="nav-icon">🔥</span>
+          <span class="nav-text" data-i18n="nav_trending">Populer (Trending)</span>
+        </a>
+        <a href="/recent">
+          <span class="nav-icon">🕐</span>
+          <span class="nav-text" data-i18n="nav_recent">Terbaru</span>
+        </a>
+        
+        <div class="sidebar-divider"></div>
+        
+        <!-- Section Jelajahi -->
+        <div class="sidebar-section-title" data-i18n="sidebar_explore">Jelajahi</div>
+        <a href="/actors">
+          <span class="nav-icon">🎭</span>
+          <span class="nav-text" data-i18n="nav_all_actors">All Actors</span>
+        </a>
+        <a href="/categories">
+          <span class="nav-icon">📁</span>
+          <span class="nav-text" data-i18n="nav_all_categories">All Categories</span>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Section Koleksi Saya -->
+        <div class="sidebar-section-title" data-i18n="sidebar_my_collections">Koleksi Saya</div>
+        <a href="/watch-later">
+          <span class="nav-icon">📁</span>
+          <span class="nav-text" data-i18n="nav_watch_later">Tonton Nanti</span>
+        </a>
+        <a href="/history">
+          <span class="nav-icon">🕐</span>
+          <span class="nav-text" data-i18n="nav_history">Riwayat Sesi</span>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Section Info Tambahan -->
+        <div class="sidebar-section-title" data-i18n="sidebar_other_info">Informasi Lain</div>
+        <a href="/popular-actors">
+          <span class="nav-icon">🎭</span>
+          <span class="nav-text" data-i18n="nav_actors">Aktor Populer</span>
+        </a>
+        <a href="/studios">
+          <span class="nav-icon">🎬</span>
+          <span class="nav-text" data-i18n="nav_studios">Studio Populer</span>
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <!-- Section Legal Kepatuhan ExoClick -->
+        <div class="sidebar-section-title" data-i18n="legal_section_title">Legal</div>
+        <button id="sidebar-legal-2257-btn">
+          <span class="nav-icon">📜</span>
+          <span class="nav-text" data-i18n="legal_2257_link">18 U.S.C. 2257</span>
+        </button>
+        <button id="sidebar-legal-dmca-btn">
+          <span class="nav-icon">🛡️</span>
+          <span class="nav-text" data-i18n="legal_dmca_link">DMCA Policy</span>
+        </button>
+        <button id="sidebar-legal-contact-btn">
+          <span class="nav-icon">✉️</span>
+          <span class="nav-text" data-i18n="legal_contact_link">Contact Us</span>
+        </button>
+      </nav>
+    </aside>
+
+    <!-- Overlay backdrop ketika mobile sidebar terbuka -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Main Content Panel -->
+    <main class="main-content" id="main-content">
+      <!-- Global Top Ad Banner Placement (Ditinjau secara responsif) -->
+      <div class="ad-placement global-top-ad" id="global-top-ad"></div>
+
+      <!-- Breadcrumb Navigation UI -->
+      <nav class="breadcrumb-nav hidden" id="breadcrumb-nav" aria-label="Breadcrumb"></nav>
+
+      <!-- Target Area Konten Dinamis Diinjeksi oleh Router SPA -->
+      <div id="app-content">
+        <!-- Halaman-halaman feed / watch akan dirender secara dinamis di sini -->
+        <div class="seo-fallback" style="display: none;">
+          <h1>MISSAV-J — Immersive JAV Streaming & Video Feed</h1>
+          <p>Temukan tren video streaming terbaik dengan antarmuka YouTube-inspired dark mode premium. MISSAV-J menghadirkan navigasi single-page app super cepat. Tonton JAV gratis dengan kualitas HD.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Adsterra Popunder Script Placeholder -->
+  <!-- PASANG SCRIPT POPUNDER ADSTERRA ANDA DI BAWAH BARIS INI -->
+  <!-- PASANG SCRIPT POPUNDER ADSTERRA ANDA DI ATAS BARIS INI -->
+
+  <!-- Toast Container Popup -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Back to Top Button -->
+  <button id="back-to-top" class="back-to-top hidden" aria-label="Back to Top" title="Back to Top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
+
+  <!-- Legal Modal Dialog Overlay -->
+  <div id="legal-modal-overlay" class="legal-modal-overlay hidden">
+    <div class="legal-modal-card">
+      <div class="legal-modal-header">
+        <h2 id="legal-modal-title">Legal Policy</h2>
+        <button id="legal-modal-close-btn" class="legal-modal-close-btn" data-i18n-title="legal_modal_close" title="Tutup" aria-label="Tutup Dialog">×</button>
+      </div>
+      <div id="legal-modal-body" class="legal-modal-body">
+        <!-- Konten hukum dinamis disuntikkan via JS -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modular SPA Script Bootstrap -->
+  <script type="module" src="/assets/js/app.js?v=2.2.2"></script>
+
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          console.log('SW registered: ', registration);
+        }).catch(registrationError => {
+          console.log('SW registration failed: ', registrationError);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
