@@ -25,4 +25,4 @@ build/
 sitemaps/*.state
 sitemap_index.xml.state
 
-.weangler
+.wrangler

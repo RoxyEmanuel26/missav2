@@ -397,12 +397,8 @@ export function renderPostMeta(post, id) {
 
   // Setup Download Button with redirect link
   if (downloadBtn) {
-    const isLocalhost = typeof window !== 'undefined' && 
-      (window.location.hostname === 'localhost' || 
-       window.location.hostname === '127.0.0.1' || 
-       window.location.hostname.startsWith('192.168.'));
-    const downloadLinks = isLocalhost ? [ "#" ] : [
-      "https://glamournakedemployee.com/pbp6j50d?key=15cc5432b0b350a5b8340131f0211a59"
+    const downloadLinks = [
+      "#" // "https://glamournakedemployee.com/pbp6j50d?key=15cc5432b0b350a5b8340131f0211a59" -- Aktifkan saat deploy
     ];
     const randomUrl = downloadLinks[Math.floor(Math.random() * downloadLinks.length)];
     downloadBtn.href = randomUrl;

@@ -7,17 +7,12 @@
 import ui from './ui.js?v=2.2.2';
 
 
-const isLocalhost = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || 
-   window.location.hostname === '127.0.0.1' || 
-   window.location.hostname.startsWith('192.168.'));
-
 // Konfigurasi Kunci Iklan
 window.missavJAdConfig = {
-  popunderEnabled: !isLocalhost,
-  socialBarEnabled: !isLocalhost,
+  popunderEnabled: false, // Ubah ke true saat deploy (aktifkan popunder)
+  socialBarEnabled: false, // Ubah ke true saat deploy (aktifkan social bar)
   // Tentukan provider banner: 'exoclick', 'adsterra', atau 'none' untuk mematikan
-  bannerProvider: isLocalhost ? 'none' : 'adsterra',
+  bannerProvider: 'none', // Ubah ke 'adsterra' saat deploy (aktifkan banner)
   // Ganti dengan Key asli Adsterra dari dashboard Anda
   topBannerKey: 'cea3767fe96bdad2805aa088e7a0f425',         // Banner 728x90
   topMobileBannerKey: '2fc8df7e7c902ed4f5d311b0ed069682',   // Banner 320x50
