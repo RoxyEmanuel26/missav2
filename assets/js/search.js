@@ -185,7 +185,21 @@ async function fetchAndRenderSearch(isInitial = false) {
   isLoading = true;
   
   try {
-    const data = await api.getPosts({ page: currentPage, ...currentFilters });
+    let apiQuery = currentFilters.search || '';
+    const lang = i18n.getLang();
+    
+    // If user is not using English, translate their search query TO English
+    // so the MissAV backend can actually find the videos.
+    if (apiQuery && lang !== 'en') {
+      try {
+        apiQuery = await i18n.translateText(apiQuery, 'en');
+      } catch (e) {
+        console.warn('Query translation failed:', e);
+      }
+    }
+
+    const apiFilters = { ...currentFilters, search: apiQuery };
+    const data = await api.getPosts({ page: currentPage, ...apiFilters });
     
     const grid = document.getElementById('search-video-grid');
     if (!grid) return;
