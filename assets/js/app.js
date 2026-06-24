@@ -771,9 +771,7 @@ function setupFloatingTelegramButton() {
 
     wrapper.innerHTML = `
       <a href="${link}" target="_blank" rel="noopener" class="floating-tg-btn" title="${content.text}" aria-label="${content.text}">
-        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-1-.65-.35-1 .22-1.6 1.48-1.52 2.72-2.57 2.72-2.57.19-.18.06-.28-.18-.12-.34.23-2.9 1.93-3.8 2.53-.41.28-.78.34-1.06.33-.31-.01-.91-.18-1.36-.32-.55-.18-.99-.28-.95-.59.02-.16.24-.33.67-.51 2.62-1.14 8.74-3.7 10.74-4.52.54-.22.75-.26.88-.26.11 0 .28.03.37.11.08.07.11.17.11.27 0 .15-.02.43-.04.75z"/>
-        </svg>
+        <img src="/assets/logo/Telegram_logo.webp" alt="Telegram" style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;">
       </a>
       <div class="floating-tg-label" onclick="window.open('${link}', '_blank', 'noopener')">
         <span class="floating-tg-title">${content.title}</span>

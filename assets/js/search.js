@@ -104,16 +104,18 @@ export async function init(query = '') {
   if (!mainApp) return;
 
   mainApp.innerHTML = `
-    <!-- Sticky Horizontal Filter Bar Container -->
-    <div id="filter-bar-container" class="filter-bar-container"></div>
-    
-    <div class="feed-info-bar">
-      <div class="video-total-count" id="search-total-count">${i18n.t('searching_videos')}</div>
-      <div class="page-track" id="search-page-track">${i18n.t('page_format', { current: 1, total: 1 })}</div>
+    <div class="feed-controls-wrapper">
+      <!-- Sticky Horizontal Filter Bar Container -->
+      <div id="filter-bar-container" class="filter-bar-container"></div>
+      
+      <div class="feed-info-bar">
+        <div class="video-total-count" id="search-total-count">${i18n.t('searching_videos')}</div>
+        <div class="page-track" id="search-page-track">${i18n.t('page_format', { current: 1, total: 1 })}</div>
+      </div>
     </div>
     
     <!-- Video Grid -->
-    <div class="video-grid" id="search-video-grid"></div>
+    <div class="editorial-grid" id="search-video-grid"></div>
 
     <!-- Infinite Scroll Sentinel & Loader -->
     <div id="search-infinite-loader" class="infinite-loader hidden">
