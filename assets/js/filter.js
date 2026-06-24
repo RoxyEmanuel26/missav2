@@ -27,9 +27,6 @@ export function init(container, currentFilters, onFilterChange) {
   if (currentFilters.orderby === 'modified') {
     activeLabel = i18n.t('sort_recent_update');
     activeValue = 'modified|DESC|';
-  } else if (currentFilters.orderby === 'likes') {
-    activeLabel = i18n.t('sort_likes');
-    activeValue = 'likes|DESC|';
   } else if (currentFilters.orderby === 'views') {
     if (currentFilters.after) {
       const afterDate = new Date(currentFilters.after);
@@ -62,7 +59,6 @@ export function init(container, currentFilters, onFilterChange) {
         <div class="dropdown-menu hidden" id="sort-dropdown-menu">
           <button class="dropdown-item ${activeValue === 'date|DESC|' ? 'active' : ''}" data-value="date|DESC|">${i18n.t('sort_date_release')}</button>
           <button class="dropdown-item ${activeValue === 'modified|DESC|' ? 'active' : ''}" data-value="modified|DESC|">${i18n.t('sort_recent_update')}</button>
-          <button class="dropdown-item ${activeValue === 'likes|DESC|' ? 'active' : ''}" data-value="likes|DESC|">${i18n.t('sort_likes')}</button>
           <button class="dropdown-item ${activeValue === 'views|DESC|day' ? 'active' : ''}" data-value="views|DESC|day">${i18n.t('sort_views_today')}</button>
           <button class="dropdown-item ${activeValue === 'views|DESC|week' ? 'active' : ''}" data-value="views|DESC|week">${i18n.t('sort_views_weekly')}</button>
           <button class="dropdown-item ${activeValue === 'views|DESC|month' ? 'active' : ''}" data-value="views|DESC|month">${i18n.t('sort_views_monthly')}</button>

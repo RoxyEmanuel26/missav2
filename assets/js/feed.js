@@ -67,6 +67,7 @@ export function renderVideoCard(post, index = 0) {
   const translatedTitle = i18n.translateVideoTitle(originalTitle);
   const safeId = ui.escapeHTML(post.id);
   const safeTitle = ui.escapeHTML(translatedTitle);
+  const safeOriginalTitleAttr = ui.escapeHTML(originalTitle);
   const safeStudio = ui.escapeHTML(post.studio || '');
   const safeCode = ui.escapeHTML(post.code || '');
   const safeThumbnail = ui.escapeHTML(ui.getProxiedThumbnail(post.thumbnail) || '');
@@ -150,7 +151,7 @@ export function renderVideoCard(post, index = 0) {
             <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
             <span class="card-code">${safeCode}</span>
           </div>
-          <h3 class="card-title" title="${safeTitle}">${safeTitle}</h3>
+          <h3 class="card-title" title="${safeTitle}" data-original-title="${safeOriginalTitleAttr}">${safeTitle}</h3>
         </div>
       </article>
     `;
@@ -164,7 +165,7 @@ export function renderVideoCard(post, index = 0) {
           ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
         </div>
         <div class="card-info">
-          <h3 class="card-title" title="${safeTitle}">${safeTitle}</h3>
+          <h3 class="card-title" title="${safeTitle}" data-original-title="${safeOriginalTitleAttr}">${safeTitle}</h3>
           <div class="card-meta">
             ${studioMarkup}
             <span class="card-dot">•</span>

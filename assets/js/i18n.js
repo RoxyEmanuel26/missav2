@@ -303,9 +303,6 @@ const DICTIONARY = {
   sort_recent_update: {
     en: 'Recent update', id: 'Recent update', 'zh-TW': '最近更新', 'zh-CN': '最近更新', ja: '最近の更新', ko: '최근 업데이트', ms: 'Kemas kini terkini', th: 'อัปเดตล่าสุด', de: 'Kürzliches Update', fr: 'Mise à jour récente', vi: 'Cập nhật gần đây', fil: 'Kamakailang update', pt: 'Atualização recente'
   },
-  sort_likes: {
-    en: 'Saved', id: 'Diselamatkan', 'zh-TW': '已保存', 'zh-CN': '已保存', ja: '保存済み', ko: '저장됨', ms: 'Diselamatkan', th: 'บันทึกแล้ว', de: 'Gespeichert', fr: 'Enregistré', vi: 'Đã lưu', fil: 'Nailigtas', pt: 'Salvo'
-  },
   sort_views_today: {
     en: 'Views today', id: 'Tampilan hari ini', 'zh-TW': '今日觀看', 'zh-CN': '今日观看', ja: '今日の視聴回数', ko: '오늘의 조회수', ms: 'Tontonan hari ini', th: 'ยอดดูวันนี้', de: 'Aufrufe heute', fr: 'Vues aujourd\'hui', vi: 'Xem hôm nay', fil: 'Mga panonood ngayon', pt: 'Visualizações hoje'
   },
