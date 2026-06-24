@@ -7,12 +7,17 @@
 import ui from './ui.js?v=2.2.2';
 
 
+const isLocalhost = typeof window !== 'undefined' && 
+  (window.location.hostname === 'localhost' || 
+   window.location.hostname === '127.0.0.1' || 
+   window.location.hostname.startsWith('192.168.'));
+
 // Konfigurasi Kunci Iklan
 window.missavJAdConfig = {
-  popunderEnabled: true,
-  socialBarEnabled: true,
-  // Tentukan provider banner: 'exoclick' atau 'adsterra'
-  bannerProvider: 'adsterra',
+  popunderEnabled: !isLocalhost,
+  socialBarEnabled: !isLocalhost,
+  // Tentukan provider banner: 'exoclick', 'adsterra', atau 'none' untuk mematikan
+  bannerProvider: isLocalhost ? 'none' : 'adsterra',
   // Ganti dengan Key asli Adsterra dari dashboard Anda
   topBannerKey: 'cea3767fe96bdad2805aa088e7a0f425',         // Banner 728x90
   topMobileBannerKey: '2fc8df7e7c902ed4f5d311b0ed069682',   // Banner 320x50
@@ -227,6 +232,11 @@ export function loadAdsterraBanner(containerId, key, width, height) {
  */
 export function loadAdBanner(containerId, key, width, height) {
   const cfg = window.missavJAdConfig;
+  if (cfg.bannerProvider === 'none') {
+    const container = document.getElementById(containerId);
+    if (container) container.innerHTML = '';
+    return;
+  }
   if (cfg.bannerProvider === 'exoclick') {
     loadExoClickBanner(containerId, key, width, height);
   } else {
@@ -281,8 +291,14 @@ if (typeof document !== 'undefined') {
  * Menginisialisasi klik pelindung transparan di atas player untuk pemicu popunder
  */
 export function initPlayerAdOverlay() {
+  const cfg = window.missavJAdConfig;
   const adOverlay = document.getElementById('player-ad-overlay');
   if (!adOverlay) return;
+
+  if (!cfg.popunderEnabled) {
+    adOverlay.classList.add('hidden');
+    return;
+  }
 
   // Tampilkan kembali overlay transparan setiap memuat video baru
   adOverlay.classList.remove('hidden');
