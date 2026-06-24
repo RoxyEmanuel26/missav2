@@ -891,6 +891,8 @@ function renderRelatedRowCard(post, index) {
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
           alt="${safeTitle}" 
           loading="lazy"
+          decoding="async"
+          onload="this.classList.add('loaded')"
           onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
         >
         ${uncensoredBadge}

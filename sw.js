@@ -1,4 +1,6 @@
 const CACHE_NAME = 'missavj-cache-v2.2.2';
+const API_CACHE_NAME = 'missavj-api-cache';
+const MAX_API_CACHE_ITEMS = 50;
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -23,10 +25,11 @@ const ASSETS_TO_CACHE = [
 
 // Install Event: Cache Core Assets
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Force the waiting service worker to become the active service worker.
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -45,6 +48,20 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+/**
+ * Helper to enforce cache limits (LRU approximation)
+ */
+async function trimCache(cacheName, maxItems) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length > maxItems) {
+    // Delete the oldest entries (keys[0] is generally the oldest inserted)
+    for (let i = 0; i < keys.length - maxItems; i++) {
+      await cache.delete(keys[i]);
+    }
+  }
+}
+
 // Fetch Event: Stale-While-Revalidate strategy for API, Cache First for assets
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
@@ -54,18 +71,29 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API Requests: Network First, fallback to Cache
+  // API Requests: Stale-While-Revalidate (Instant perceived perf + background update)
   if (url.origin === 'https://server.apijav.com' || (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/image'))) {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const clonedResponse = response.clone();
-          caches.open('missavj-api-cache').then((cache) => {
-            cache.put(event.request, clonedResponse);
-          });
-          return response;
-        })
-        .catch(() => caches.match(event.request))
+      caches.match(event.request).then((cachedResponse) => {
+        const fetchPromise = fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(API_CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseClone)
+                .then(() => trimCache(API_CACHE_NAME, MAX_API_CACHE_ITEMS));
+            });
+          }
+          return networkResponse;
+        }).catch((err) => {
+          console.warn('Network fetch failed for API, relying on cache', err);
+          // Return the cached response if available, else throw
+          if (cachedResponse) return cachedResponse;
+          throw err;
+        });
+        
+        // Return cached immediately if present, OTHERWISE wait for the network fetch
+        return cachedResponse || fetchPromise;
+      })
     );
     return;
   }
@@ -77,8 +105,8 @@ self.addEventListener('fetch', (event) => {
         return cachedResponse;
       }
       return fetch(event.request).then((response) => {
-        // Cache dynamically fetched assets (like lazy loaded images or chunks)
-        if (response && response.status === 200 && response.type === 'basic') {
+        // Cache dynamically fetched core assets (do NOT cache third-party images here to prevent bloat)
+        if (response && response.status === 200 && response.type === 'basic' && url.origin === location.origin) {
           const clonedResponse = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, clonedResponse);

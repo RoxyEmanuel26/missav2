@@ -140,8 +140,10 @@ export function renderVideoCard(post, index = 0) {
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
           alt="${safeTitle}" 
           loading="lazy" 
+          decoding="async"
           width="320" 
           height="180"
+          onload="this.classList.add('loaded')"
           onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
         >
         ${uncensoredBadge}
