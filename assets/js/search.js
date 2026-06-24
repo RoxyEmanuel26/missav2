@@ -151,6 +151,9 @@ export async function init(query = '') {
   window.missavJSearchTriggerLiveQuery = async (val) => {
     if (window.missavJState.currentPath !== '/search') return;
 
+    val = val.trim();
+    if (val === currentQuery) return; // OPTIMIZATION: Deduplicate identical search events
+
     if (val.length >= 2) {
       currentQuery = val;
       currentFilters.search = val;

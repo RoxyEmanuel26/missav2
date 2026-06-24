@@ -69,7 +69,8 @@ export async function onRequest(context) {
           'Accept': 'application/json',
           'X-Client-Site': clientSite
         },
-        signal: controller.signal
+        signal: controller.signal,
+        cf: { cacheEverything: true, cacheTtl: 3600 } // OPTIMIZATION: Edge Cache for video player sources
       });
       clearTimeout(timeoutId);
     } catch (err) {
@@ -104,7 +105,7 @@ export async function onRequest(context) {
     const responseHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=1800'
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=1800' // OPTIMIZATION: Browser cache to reduce SPA fetch spam
     };
 
     const responseToReturn = new Response(JSON.stringify(data), {

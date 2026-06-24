@@ -315,21 +315,17 @@ async function fetchAndRenderFeed(isInitial = false) {
   isLoading = true;
   
   try {
-    // In random mode on initial load, probe the API to discover totalPages,
-    // then pick a truly random starting page
     let fetchPage = currentPage;
-    if (randomMode && isInitial) {
-      try {
-        const probe = await api.getPosts({ page: 1, per_page: 1, ...currentFilters });
-        if (probe.totalPages > 1) {
-          totalPages = probe.totalPages;
-          fetchPage = Math.floor(Math.random() * totalPages) + 1;
-          currentPage = fetchPage;
-        }
-      } catch (e) {
-        // Probe failed — proceed with page 1 normally
-      }
+    
+    // OPTIMIZATION: Removed per_page: 1 probe. 
+    // In random mode on initial load, we will fetch page 1 with full per_page.
+    // We will discover totalPages from this fetch and randomize subsequent infinite scrolls.
+    if (randomMode && isInitial && totalPages > 1) {
+      // If we already know totalPages (e.g. returning to feed), we can pick random immediately.
+      fetchPage = Math.floor(Math.random() * totalPages) + 1;
+      currentPage = fetchPage;
     }
+    
     usedPages.add(fetchPage);
 
     const data = await api.getPosts({ page: fetchPage, ...currentFilters });

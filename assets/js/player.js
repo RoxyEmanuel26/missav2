@@ -694,39 +694,33 @@ export async function loadRelatedVideos(post) {
     const promises = [];
     const queryLabels = []; // Label debug untuk setiap query
 
-    // ── Query 1: Pencarian berdasarkan Aktor Utama ──
-    if (post.actors && post.actors.length > 0) {
-      promises.push(api.getPosts({ actor: post.actors[0], per_page: 6 }));
-      queryLabels.push('actor:' + post.actors[0]);
-    }
+    // OPTIMIZATION: Reduce 4 parallel requests to 1-2 prioritized requests to save Cloudflare usage.
+    // Prioritize Actor > Series > Tag > Category
 
-    // ── Query 2: Pencarian berdasarkan Kode Video (exact) ──
-    if (post.code && post.code.trim()) {
+    if (post.actors && post.actors.length > 0) {
+      // If actor exists, just fetch actor's videos (most relevant)
+      promises.push(api.getPosts({ actor: post.actors[0], per_page: 12 }));
+      queryLabels.push('actor:' + post.actors[0]);
+    } else if (post.code && post.code.trim() && extractCodeSeriesPrefix(post.code)) {
+      // Fallback to series
       const seriesPrefix = extractCodeSeriesPrefix(post.code);
-      if (seriesPrefix) {
-        // Cari video dengan prefix seri yang sama (contoh: ABP → ABP-xxx)
-        promises.push(api.getPosts({ search: seriesPrefix, per_page: 6 }));
-        queryLabels.push('series:' + seriesPrefix);
-      }
+      promises.push(api.getPosts({ search: seriesPrefix, per_page: 12 }));
+      queryLabels.push('series:' + seriesPrefix);
+    } else if (post.tags && post.tags.length > 0) {
+      // Fallback to tag
+      promises.push(api.getPosts({ tag: post.tags[0], per_page: 12 }));
+      queryLabels.push('tag:' + post.tags[0]);
+    } else if (post.categories && post.categories.length > 0) {
+      // Fallback to category
+      promises.push(api.getPosts({ category: post.categories[0], per_page: 12 }));
+      queryLabels.push('category:' + post.categories[0]);
     } else {
-      // Fallback: kata kunci judul
+      // Absolute fallback
       const keywords = extractTitleKeywords(post.title);
       if (keywords) {
-        promises.push(api.getPosts({ search: keywords, per_page: 6 }));
+        promises.push(api.getPosts({ search: keywords, per_page: 12 }));
         queryLabels.push('keywords:' + keywords);
       }
-    }
-
-    // ── Query 3: Pencarian berdasarkan Tag Utama ──
-    if (post.tags && post.tags.length > 0) {
-      promises.push(api.getPosts({ tag: post.tags[0], per_page: 6 }));
-      queryLabels.push('tag:' + post.tags[0]);
-    }
-
-    // ── Query 4: Pencarian berdasarkan Kategori Pertama ──
-    if (post.categories && post.categories.length > 0) {
-      promises.push(api.getPosts({ category: post.categories[0], per_page: 6 }));
-      queryLabels.push('category:' + post.categories[0]);
     }
 
     // Jalankan semua query secara paralel untuk efisiensi tinggi

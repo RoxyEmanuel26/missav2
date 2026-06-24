@@ -53,7 +53,8 @@ async function fetchPostMetadata(id, origin) {
         'Accept': 'application/json',
         'X-Client-Site': origin
       },
-      signal: controller.signal
+      signal: controller.signal,
+      cf: { cacheEverything: true, cacheTtl: 300 } // OPTIMIZATION: Cache outbound requests at Cloudflare Edge
     });
     clearTimeout(timeoutId);
     if (!res.ok) return null;
@@ -82,7 +83,8 @@ async function getTranslatedTitle(id, lang, supabaseUrl, supabaseKey) {
           'apikey': supabaseKey,
           'Authorization': `Bearer ${supabaseKey}`
         },
-        signal: controller.signal
+        signal: controller.signal,
+        cf: { cacheEverything: true, cacheTtl: 3600 } // OPTIMIZATION: Cache translations at Edge
       }
     );
     clearTimeout(timeoutId);
@@ -324,8 +326,8 @@ export async function onRequest(context) {
       const watchResponse = new Response(htmlContent, {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
-          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-          'CDN-Cache-Control': 'public, max-age=300'
+          'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200',
+          'CDN-Cache-Control': 'public, max-age=600'
         }
       });
 
@@ -482,8 +484,8 @@ export async function onRequest(context) {
         const listResponse = new Response(htmlContent, {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-            'CDN-Cache-Control': 'public, max-age=300'
+            'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200', // OPTIMIZATION: Browser cache to reduce invocations
+            'CDN-Cache-Control': 'public, max-age=600'
           }
         });
 

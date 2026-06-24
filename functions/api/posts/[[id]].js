@@ -47,7 +47,8 @@ async function getTranslationFromDb(id, supabaseUrl, supabaseKey) {
         'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`
       },
-      signal: controller.signal
+      signal: controller.signal,
+      cf: { cacheEverything: true, cacheTtl: 3600 } // OPTIMIZATION: Edge Cache for DB calls
     });
     clearTimeout(timeoutId);
     if (!res.ok) return null;
@@ -247,7 +248,8 @@ export async function onRequest(context) {
               'Accept': 'application/json',
               'X-Client-Site': clientSite
             },
-            signal: controller.signal
+            signal: controller.signal,
+            cf: { cacheEverything: true, cacheTtl: 300 } // OPTIMIZATION: Edge Cache for API calls
           });
           clearTimeout(timeoutId);
           if (!response.ok) return [];
@@ -277,7 +279,8 @@ export async function onRequest(context) {
             'Accept': 'application/json',
             'X-Client-Site': clientSite
           },
-          signal: controller.signal
+          signal: controller.signal,
+          cf: { cacheEverything: true, cacheTtl: 300 }
         });
         clearTimeout(timeoutId);
       } catch (err) {
@@ -341,7 +344,7 @@ export async function onRequest(context) {
     const responseHeaders = {
       ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600'
+      'Cache-Control': 'public, max-age=300, s-maxage=600, stale-while-revalidate=1200' // OPTIMIZATION: Browser cache to reduce SPA fetch spam
     };
 
     if (total) responseHeaders['X-WP-Total'] = total;
