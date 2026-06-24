@@ -132,14 +132,6 @@ class AnalyticsManager {
     });
   }
 
-  /** Track Watch Later add */
-  trackWatchLaterAdd(videoId, videoTitle) {
-    this.trackEvent('watch_later_add', {
-      video_id: videoId,
-      video_title: videoTitle
-    });
-  }
-
   /** Track share click */
   trackShare(videoId, shareMethod) {
     this.trackEvent('share_click', {

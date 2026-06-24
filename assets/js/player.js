@@ -114,10 +114,6 @@ export async function init(id) {
                 <span class="btn-icon">👎</span>
                 <span id="dislike-count" class="btn-label">0</span>
               </button>
-              <button id="watch-later-btn" class="player-btn">
-                <span class="btn-icon">📁</span>
-                <span id="watch-later-label" class="btn-label">${i18n.t('btn_watch_later')}</span>
-              </button>
               <button id="share-btn" class="player-btn">
                 <span class="btn-icon">🔗</span>
                 <span class="btn-label">${i18n.t('btn_share')}</span>
@@ -140,21 +136,21 @@ export async function init(id) {
             
             <div class="meta-box-details">
               <div class="meta-section">
-                <h4>${i18n.t('meta_actors')}</h4>
+                <h4><span class="meta-icon">🎭</span> ${i18n.t('meta_actors')}</h4>
                 <div class="meta-chips-list" id="player-actors-list">
                   <span class="chip-loading-placeholder">${i18n.t('loading_actors')}</span>
                 </div>
               </div>
               
               <div class="meta-section">
-                <h4>${i18n.t('meta_categories')}</h4>
+                <h4><span class="meta-icon">📁</span> ${i18n.t('meta_categories')}</h4>
                 <div class="meta-chips-list" id="player-categories-list">
                   <span class="chip-loading-placeholder">${i18n.t('loading_categories')}</span>
                 </div>
               </div>
 
               <div class="meta-section">
-                <h4>${i18n.t('meta_tags')}</h4>
+                <h4><span class="meta-icon">🏷️</span> ${i18n.t('meta_tags')}</h4>
                 <div class="meta-chips-list" id="player-tags-list">
                   <span class="chip-loading-placeholder">${i18n.t('loading_tags')}</span>
                 </div>
@@ -451,9 +447,6 @@ export function renderPostMeta(post, id) {
   // Likes & Dislikes
   setupLikesAndDislikes(post, id);
 
-  // Watch Later (Tonton Nanti) button logic
-  setupWatchLaterLogic(post);
-
   // Setup Share Button
   const shareBtn = document.getElementById('share-btn');
   if (shareBtn) {
@@ -534,44 +527,6 @@ function setupLikesAndDislikes(post, id) {
     }
     likeCountEl.textContent = likes.toLocaleString('id-ID');
     dislikeCountEl.textContent = dislikes.toLocaleString('id-ID');
-  });
-}
-
-/**
- * Mengelola logic penyimpanan video Tonton Nanti in-memory
- */
-function setupWatchLaterLogic(post) {
-  const watchLaterBtn = document.getElementById('watch-later-btn');
-  const watchLaterLabel = document.getElementById('watch-later-label');
-  if (!watchLaterBtn || !watchLaterLabel) return;
-
-  const updateButtonVisualState = () => {
-    const isSaved = window.missavJState.watchLater.some(p => String(p.id) === String(post.id));
-    if (isSaved) {
-      watchLaterBtn.classList.add('active');
-      watchLaterLabel.textContent = i18n.t('btn_saved');
-    } else {
-      watchLaterBtn.classList.remove('active');
-      watchLaterLabel.textContent = i18n.t('btn_watch_later');
-    }
-  };
-
-  updateButtonVisualState();
-
-  watchLaterBtn.addEventListener('click', () => {
-    const isSaved = window.missavJState.watchLater.some(p => String(p.id) === String(post.id));
-    
-    if (isSaved) {
-      // Hapus dari tonton nanti
-      window.missavJState.watchLater = window.missavJState.watchLater.filter(p => String(p.id) !== String(post.id));
-      ui.showToast(i18n.t('toast_removed_watch_later'));
-    } else {
-      // Simpan ke tonton nanti
-      window.missavJState.watchLater.push(post);
-      ui.showToast(i18n.t('toast_saved_watch_later'));
-      Analytics.trackWatchLaterAdd(id, post.title);
-    }
-    updateButtonVisualState();
   });
 }
 
@@ -1022,20 +977,16 @@ export function showShareModal(title, shareUrl, thumbnailUrl) {
         <div class="share-modal-body">
           <div class="share-options-grid">
             <a href="#" target="_blank" class="share-option-btn opt-telegram">
-              <span class="share-icon">✈️</span>
+              <img src="/assets/logo/Telegram_logo.webp" class="share-icon-img" alt="Telegram">
               <span>Telegram</span>
             </a>
             <a href="#" target="_blank" class="share-option-btn opt-facebook">
-              <span class="share-icon">📘</span>
+              <img src="/assets/logo/Facebook_logo.webp" class="share-icon-img" alt="Facebook">
               <span>Facebook</span>
             </a>
             <a href="#" target="_blank" class="share-option-btn opt-x">
-              <span class="share-icon">𝕏</span>
+              <img src="/assets/logo/twitter-x_logo.webp" class="share-icon-img" alt="X (Twitter)">
               <span>X (Twitter)</span>
-            </a>
-            <a href="#" target="_blank" class="share-option-btn opt-pinterest">
-              <span class="share-icon">📌</span>
-              <span>Pinterest</span>
             </a>
             <button class="share-option-btn opt-copy">
               <span class="share-icon">🔗</span>
@@ -1069,13 +1020,11 @@ export function showShareModal(title, shareUrl, thumbnailUrl) {
   const tgBtn = modal.querySelector('.opt-telegram');
   const fbBtn = modal.querySelector('.opt-facebook');
   const xBtn = modal.querySelector('.opt-x');
-  const pinBtn = modal.querySelector('.opt-pinterest');
   const copyBtn = modal.querySelector('.opt-copy');
 
   tgBtn.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`;
   fbBtn.href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
   xBtn.href = `https://x.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(title)}`;
-  pinBtn.href = `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&media=${encodeURIComponent(thumbnailUrl)}&description=${encodeURIComponent(title)}`;
 
   copyBtn.onclick = (e) => {
     e.preventDefault();

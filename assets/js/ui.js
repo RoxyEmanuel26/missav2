@@ -95,27 +95,39 @@ const ui = {
    * @param {number} duration - Durasi tampil (ms)
    */
   showToast(message, duration = 3000) {
-    let container = document.getElementById('toast-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'toast-container';
-      container.className = 'toast-container';
-      document.body.appendChild(container);
-    }
+    const container = document.getElementById('toast-container');
+    if (!container) return;
 
     const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message; // textContent aman secara default
+    toast.className = 'toast show';
+    toast.textContent = message;
+
     container.appendChild(toast);
 
-    // Animasi masuk
-    setTimeout(() => toast.classList.add('show'), 50);
-
-    // Animasi keluar & hapus
     setTimeout(() => {
       toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 300);
+      toast.classList.add('hide');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
     }, duration);
+  },
+
+  /**
+   * Menampilkan loading spinner
+   * @param {HTMLElement} [container] - Container opsional
+   */
+  showLoading(container = null) {
+    const target = container || document.getElementById('app-content');
+    if (target) {
+      target.innerHTML = `
+        <div class="loader-container">
+          <div class="spinner"></div>
+        </div>
+      `;
+    }
   },
 
   /**
@@ -133,11 +145,21 @@ const ui = {
     const btnText = i18n ? i18n.t('error_retry') : 'Coba Lagi';
 
     target.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">⚠️</div>
-        <h3>${titleText}</h3>
-        <p>${safeMessage}</p>
-        <button id="error-retry-btn" class="btn-primary">${btnText}</button>
+      <div class="empty-state-premium error-state-premium">
+        <div class="error-state-glow"></div>
+        <div class="empty-icon-wrapper error-icon-wrapper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="premium-empty-icon">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h3 class="empty-state-title">${titleText}</h3>
+        <p class="empty-state-desc">${safeMessage}</p>
+        <button id="error-retry-btn" class="empty-state-btn error-state-btn">
+          <span>${btnText}</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+        </button>
       </div>
     `;
 
@@ -165,11 +187,22 @@ const ui = {
     const btnText = i18n ? i18n.t('empty_clear_btn') : 'Kembali ke Beranda';
 
     target.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <h3>${titleText}</h3>
-        <p>${descText}</p>
-        <button id="empty-clear-btn" class="btn-primary">${btnText}</button>
+      <div class="empty-state-premium">
+        <div class="empty-state-glow"></div>
+        <div class="empty-icon-wrapper">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="premium-empty-icon">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="11" y1="8" x2="11" y2="14"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </div>
+        <h3 class="empty-state-title">${titleText}</h3>
+        <p class="empty-state-desc">${descText}</p>
+        <button id="empty-clear-btn" class="empty-state-btn">
+          <span>${btnText}</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </button>
       </div>
     `;
 
@@ -182,21 +215,46 @@ const ui = {
   },
 
   /**
-   * Inisialisasi tema in-memory pertama kali (Dark theme default)
+   * Inisialisasi tema pertama kali
    */
   initTheme() {
     document.documentElement.setAttribute('data-theme', currentTheme);
     this.updateThemeButtonIcon();
+    
+    // Watch for system preference changes if no user preference is stored
+    if (!localStorage.getItem('missav_theme')) {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+      if (!prefersDark.matches) {
+        currentTheme = 'light';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        this.updateThemeButtonIcon();
+      }
+    }
   },
 
   /**
    * Toggle tema (Dark <=> Light)
    */
   toggleTheme() {
+    // Add transition class to body to make switching smooth
+    document.body.classList.add('theme-transitioning');
+    
     currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', currentTheme);
+    localStorage.setItem('missav_theme', currentTheme);
     this.updateThemeButtonIcon();
-    this.showToast(`Beralih ke Mode ${currentTheme === 'dark' ? 'Gelap' : 'Terang'}`);
+    
+    // Remove transition class after animation completes
+    setTimeout(() => {
+      document.body.classList.remove('theme-transitioning');
+    }, 500);
+
+    const i18n = window.i18n;
+    if (currentTheme === 'dark') {
+      this.showToast(i18n ? i18n.t('theme_switched_dark') : 'Beralih ke Mode Gelap');
+    } else {
+      this.showToast(i18n ? i18n.t('theme_switched_light') : 'Beralih ke Mode Terang');
+    }
   },
 
   /**
@@ -206,28 +264,48 @@ const ui = {
     const themeBtn = document.getElementById('theme-toggle-btn');
     if (!themeBtn) return;
 
+    // We use a single sophisticated SVG icon that animates based on state, 
+    // but here we can just supply the right SVG states for our CSS to animate
     if (currentTheme === 'dark') {
       themeBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="5"></circle>
-          <line x1="12" y1="1" x2="12" y2="3"></line>
-          <line x1="12" y1="21" x2="12" y2="23"></line>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-          <line x1="1" y1="12" x2="3" y2="12"></line>
-          <line x1="21" y1="12" x2="23" y2="12"></line>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-        </svg>
+        <div class="theme-icon-container dark-active">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </div>
       `;
-      themeBtn.setAttribute('title', 'Ganti ke Mode Terang');
+      themeBtn.setAttribute('title', window.i18n ? window.i18n.t('theme_switched_light') : 'Ganti ke Mode Terang');
     } else {
       themeBtn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </svg>
+        <div class="theme-icon-container light-active">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </div>
       `;
-      themeBtn.setAttribute('title', 'Ganti ke Mode Gelap');
+      themeBtn.setAttribute('title', window.i18n ? window.i18n.t('theme_switched_dark') : 'Ganti ke Mode Gelap');
     }
   },
 

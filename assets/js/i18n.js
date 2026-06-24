@@ -121,9 +121,6 @@ const DICTIONARY = {
   },
 
   // Tombol Aksi Player
-  btn_watch_later: {
-    en: 'Watch Later', id: 'Tonton Nanti', 'zh-TW': '稍後觀看', 'zh-CN': '稍后观看', ja: '後で見る', ko: '나중에 보기', ms: 'Tonton Nanti', th: 'ดูภายหลัง', de: 'Später ansehen', fr: 'À regarder plus tard', vi: 'Xem sau', fil: 'Panoorin Mamaya', pt: 'Assistir'
-  },
   btn_saved: {
     en: 'Saved', id: 'Tersimpan', 'zh-TW': '已保存', 'zh-CN': '已保存', ja: '保存済み', ko: '저장됨', ms: 'Tersimpan', th: 'บันทึกแล้ว', de: 'Gespeichert', fr: 'Enregistré', vi: 'Đã lưu', fil: 'Naka-save', pt: 'Salvo'
   },
@@ -143,9 +140,6 @@ const DICTIONARY = {
   },
   empty_clear_btn: {
     en: 'Back to Home', id: 'Kembali ke Beranda', 'zh-TW': '返回首頁', 'zh-CN': '返回首页', ja: 'ホームに戻る', ko: '홈으로 돌아가기', ms: 'Kembali ke Utama', th: 'กลับหน้าแรก', de: 'Zurück zur Startseite', fr: 'Retour à l\'accueil', vi: 'Về trang chủ', fil: 'Bumalik sa Tahanan', pt: 'Voltar ao Início'
-  },
-  watch_later_empty_desc: {
-    en: 'Your watch later list is empty. Add videos from the player page!', id: 'Daftar tonton nanti Anda masih kosong. Simpan video dari halaman pemutaran!', 'zh-TW': '您的稍後觀看清單是空的。從播放器頁面添加影片！', 'zh-CN': '您的稍后观看清单是空的。从播放器页面添加影片！', ja: '「後で見る」リストは空です。プレイヤーページから動画を追加してください！', ko: '나중에 보기 목록이 비어 있습니다. 플레이어 페이지에서 비디오를 추가해 보세요!', ms: 'Senarai tonton nanti anda kosong. Tambah video dari halaman pemain!', th: 'รายการดูภายหลังของคุณว่างเปล่า เพิ่มวิดีโอจากหน้าเล่นวิดีโอ!', de: 'Ihre Merkliste ist leer. Fügen Sie Videos von der Player-Seite hinzu!', fr: 'Votre liste à regarder plus tard est vide. Ajoutez des vidéos depuis la page de lecture !', vi: 'Danh sách xem sau của bạn đang trống. Thêm video từ trang phát!', fil: 'Walang laman ang iyong panoorin mamaya. Magdagdag ng mga video mula sa page ng player!', pt: 'Sua lista de assistir mais tarde está vazia. Adicione vídeos da página de reprodução!'
   },
   history_empty_desc: {
     en: 'Your session play history is empty. Start playing some videos!', id: 'Riwayat tontonan sesi Anda kosong. Silakan putar video terlebih dahulu!', 'zh-TW': '您的播放紀錄是空的。開始播放一些影片吧！', 'zh-CN': '您的播放纪录是空的。开始播放一些影片吧！', ja: '視聴履歴は空です。動画の再生を開始してください！', ko: '시청 기록이 비어 있습니다. 비디오 재생을 시작해 보세요!', ms: 'Sejarah mainan sesi anda kosong. Mula memainkan beberapa video!', th: 'ประวัติการรับชมของคุณว่างเปล่า เริ่มเล่นวิดีโอกันเลย!', de: 'Ihr Wiedergabeverlauf ist leer. Spielen Sie einige Videos ab!', fr: 'Votre historique de lecture est vide. Lancez la lecture de quelques vidéos !', vi: 'Lịch sử phát của bạn đang trống. Bắt đầu phát một số video!', fil: 'Walang laman ang iyong kasaysayan ng pag-play. Mag-play ng ilang video!', pt: 'Seu histórico de reprodução está vazio. Comece a assistir a alguns vídeos!'
@@ -279,12 +273,6 @@ const DICTIONARY = {
   toast_share_failed: {
     en: 'Failed to copy link.', id: 'Gagal menyalin tautan.', ja: 'リンクのコピーに失敗しました。', ko: '링크 복사 실패.', 'zh-TW': '複製連結失敗。', 'zh-CN': '复制链接失败。'
   },
-  toast_removed_watch_later: {
-    en: 'Removed from Watch Later 📁', id: 'Dihapus dari Tonton Nanti 📁', ja: '「後で見る」から削除されました 📁', ko: '나중에 보기에서 제거됨 📁', 'zh-TW': '已從稍後觀看中移除 📁', 'zh-CN': '已从稍后观看中移除 📁'
-  },
-  toast_saved_watch_later: {
-    en: 'Saved to Watch Later 📁', id: 'Disimpan ke Tonton Nanti 📁', ja: '「後で見る」に保存されました 📁', ko: '나중에 보기에 저장됨 📁', 'zh-TW': '已儲存至稍後觀看 📁', 'zh-CN': '已保存至稍后观看 📁'
-  },
   actor_not_found: {
     en: 'Actress Not Found', id: 'Aktris Tidak Ditemukan', ja: '女優が見つかりません', ko: '배우를 찾을 수 없음', 'zh-TW': '找不到演員', 'zh-CN': '找不到演员'
   },
@@ -395,6 +383,12 @@ const DICTIONARY = {
   },
   match_same_category: {
     en: 'Same Category', id: 'Kategori Sama', ja: '同じカテゴリ', ko: '같은 카테고리', 'zh-TW': '同分類', 'zh-CN': '同分类', ms: 'Kategori Sama', th: 'หมวดหมู่เดียวกัน', de: 'Gleiche Kategorie', fr: 'Même Catégorie', vi: 'Cùng danh mục', fil: 'Parehong Kategorya', pt: 'Mesma Categoria'
+  },
+  theme_switched_dark: {
+    en: 'Switched to Dark Mode', id: 'Beralih ke Mode Gelap', ja: 'ダークモードに切り替えました', ko: '다크 모드로 전환되었습니다', 'zh-TW': '已切換至深色模式', 'zh-CN': '已切换至深色模式', ms: 'Beralih ke Mod Gelap', th: 'สลับเป็นโหมดมืด', de: 'In den dunklen Modus gewechselt', fr: 'Passé en mode sombre', vi: 'Đã chuyển sang chế độ tối', fil: 'Lumipat sa Dark Mode', pt: 'Mudou para o Modo Escuro'
+  },
+  theme_switched_light: {
+    en: 'Switched to Light Mode', id: 'Beralih ke Mode Terang', ja: 'ライトモードに切り替えました', ko: '라이트 모드로 전환되었습니다', 'zh-TW': '已切換至淺色模式', 'zh-CN': '已切换至浅色模式', ms: 'Beralih ke Mod Terang', th: 'สลับเป็นโหมดสว่าง', de: 'In den hellen Modus gewechselt', fr: 'Passé en mode clair', vi: 'Đã chuyển sang chế độ sáng', fil: 'Lumipat sa Light Mode', pt: 'Mudou para o Modo Claro'
   },
   no_results_for: {
     en: 'No results for "{query}"', id: 'Tidak ada hasil untuk "{query}"', 'zh-TW': '找不到 "{query}" 的結果', 'zh-CN': '找不到 "{query}" 的结果', ja: '「{query}」の検索結果はありません', ko: '"{query}"에 대한 결과가 없습니다', ms: 'Tiada hasil untuk "{query}"', th: 'ไม่มีผลลัพธ์สำหรับ "{query}"', de: 'Keine Ergebnisse für "{query}"', fr: 'Aucun résultat pour "{query}"', vi: 'Không có kết quả cho "{query}"', fil: 'Walang resulta para sa "{query}"', pt: 'Nenhum resultado para "{query}"'

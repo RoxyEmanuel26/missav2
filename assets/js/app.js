@@ -13,7 +13,7 @@ import './ads.js?v=2.2.2';
 
 // Initialize Global In-Memory SPA States
 window.missavJState = {
-  watchLater: [],   // Stores post objects saved to Watch Later list
+  watchHistory: [],   // Stores user's watch history
   history: [],      // Session play history for recent video plays
   activeVideo: null, // Holds details of the currently active playing video
   isFloating: false, // Flag to trace if the player is currently in Picture-in-Picture (PiP) mode
@@ -231,7 +231,6 @@ const routes = {
   '/categories':      () => import('./categories.js?v=2.2.2').then(m => m.init()),
   
   // Playlists routing mapping
-  '/watch-later': () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_watch_later'), window.missavJState.watchLater, i18n.t('watch_later_empty_desc'))),
   '/history':     () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc')))
 };
 
@@ -542,10 +541,6 @@ function navigate(urlPath) {
       titleEl.setAttribute('data-original-title', post.title || '');
     }
     document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
-    
-    // Re-translate player button labels
-    const watchLaterLabel = document.getElementById('watch-later-label');
-    if (watchLaterLabel) watchLaterLabel.textContent = i18n.t('btn_watch_later');
     
     // Re-translate meta section headers (Actors, Categories, Tags)
     document.querySelectorAll('.meta-section h4').forEach((h4, idx) => {
@@ -1598,7 +1593,6 @@ function setupLanguageDropdown() {
     e.stopPropagation();
     const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
     trigger.setAttribute('aria-expanded', !isExpanded);
-    menu.classList.toggle('hidden');
     trigger.parentElement.classList.toggle('open');
   });
 
@@ -1610,7 +1604,6 @@ function setupLanguageDropdown() {
       i18n.setLang(selectedLang);
       
       // Close bounds
-      menu.classList.add('hidden');
       trigger.setAttribute('aria-expanded', 'false');
       trigger.parentElement.classList.remove('open');
     }
@@ -1619,7 +1612,6 @@ function setupLanguageDropdown() {
   // Auto-close dropdown when cursor clicks out of bounds
   document.addEventListener('click', (e) => {
     if (!trigger.parentElement.contains(e.target)) {
-      menu.classList.add('hidden');
       trigger.setAttribute('aria-expanded', 'false');
       trigger.parentElement.classList.remove('open');
     }
