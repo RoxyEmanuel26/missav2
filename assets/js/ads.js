@@ -14,10 +14,10 @@ window.missavJAdConfig = {
   // Tentukan provider banner: 'exoclick' atau 'adsterra'
   bannerProvider: 'adsterra',
   // Ganti dengan Key asli Adsterra dari dashboard Anda
-  topBannerKey: 'bdec847e5576cfc239f93361b9353a34',         // Banner 728x90
-  topMobileBannerKey: '9263e17e549b59add0a02c334b7b6b7e',   // Banner 320x50
-  belowPlayerBannerKey: '42bf4702a7a9795846258d2f444784f4', // Banner 300x250
-  sidebarBannerKey: '42bf4702a7a9795846258d2f444784f4'     // Banner 300x250
+  topBannerKey: 'cea3767fe96bdad2805aa088e7a0f425',         // Banner 728x90
+  topMobileBannerKey: '2fc8df7e7c902ed4f5d311b0ed069682',   // Banner 320x50
+  belowPlayerBannerKey: 'c3dd5452e089008cb0e6fbb8af1e92ef', // Banner 300x250
+  sidebarBannerKey: 'c3dd5452e089008cb0e6fbb8af1e92ef'     // Banner 300x250
 };
 
 /**
@@ -325,7 +325,7 @@ export function initAdsterraPopunder() {
   console.log('[Ads] Loading Adsterra popunder script dynamically on watch page...');
   const script = document.createElement('script');
   script.id = 'adsterra-popunder-script';
-  script.src = 'https://glamournakedemployee.com/b2/9e/1b/b29e1b8f1f4574a57f5873d55a1a1a29.js';
+  script.src = 'https://glamournakedemployee.com/59/bf/c2/59bfc272ae9829969cd5b4b90cf5402a.js';
   script.async = true;
   document.head.appendChild(script);
 }
@@ -343,7 +343,7 @@ export function initAdsterraSocialBar() {
   console.log('[Ads] Loading Adsterra Social Bar script dynamically...');
   const script = document.createElement('script');
   script.id = 'adsterra-socialbar-script';
-  script.src = 'https://glamournakedemployee.com/c9/97/1d/c9971d54c2e1ed33b58dee3c4a998b66.js';
+  script.src = 'https://glamournakedemployee.com/50/87/60/508760de16ec3a16f507cec8dfa6693c.js';
   script.async = true;
   document.head.appendChild(script);
 }
