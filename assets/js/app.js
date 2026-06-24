@@ -9,7 +9,7 @@ import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.2.2';
 import i18n from './i18n.js?v=2.2.2';
 import { Analytics } from './analytics.js?v=2.2.2';
 import ReferralSystem from './referral.js?v=2.2.2';
-import './ads.js?v=2.2.2';
+// import './ads.js?v=2.2.2'; // AKTIFKAN SAAT DEPLOY
 
 // Initialize Global In-Memory SPA States
 window.missavJState = {
