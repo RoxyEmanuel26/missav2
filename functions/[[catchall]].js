@@ -251,10 +251,10 @@ export async function onRequest(context) {
                 "publisher": {
                   "@type": "Organization",
                   "name": "MISSAV-J",
-                  "url": "https://www.missav-j.web.id",
+                  "url": "https://www.missav-j.my.id",
                   "logo": {
                     "@type": "ImageObject",
-                    "url": "https://www.missav-j.web.id/assets/images/logo.png"
+                    "url": "https://www.missav-j.my.id/assets/images/logo.png"
                   }
                 },
                 "inLanguage": "ja"
@@ -285,7 +285,7 @@ export async function onRequest(context) {
                     "@type": "ListItem",
                     "position": 1,
                     "name": "Home",
-                    "item": "https://www.missav-j.web.id"
+                    "item": "https://www.missav-j.my.id"
                   },
                   {
                     "@type": "ListItem",
@@ -449,7 +449,7 @@ export async function onRequest(context) {
               "@type": "ListItem",
               "position": 1,
               "name": "Home",
-              "item": "https://www.missav-j.web.id"
+              "item": "https://www.missav-j.my.id"
             },
             {
               "@type": "ListItem",
