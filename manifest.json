@@ -2,11 +2,12 @@
   "name": "MISSAV-J",
   "short_name": "MISSAV-J",
   "description": "Free Asia Video Streaming Directory. Super Fast SPA.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
   "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
-  "orientation": "portrait",
+  "theme_color": "#0f0f0f",
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/assets/favicon/android-chrome-192x192.png",
@@ -19,6 +20,29 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Trending Videos",
+      "short_name": "Trending",
+      "description": "Watch trending videos",
+      "url": "/trending?source=pwa",
+      "icons": [{ "src": "/assets/favicon/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Recent Videos",
+      "short_name": "Recent",
+      "description": "Watch newly added videos",
+      "url": "/recent?source=pwa",
+      "icons": [{ "src": "/assets/favicon/android-chrome-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Watch History",
+      "short_name": "History",
+      "description": "Continue watching",
+      "url": "/history?source=pwa",
+      "icons": [{ "src": "/assets/favicon/android-chrome-192x192.png", "sizes": "192x192" }]
     }
   ]
 }

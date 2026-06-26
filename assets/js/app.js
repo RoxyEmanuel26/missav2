@@ -9,7 +9,16 @@ import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.2.2';
 import i18n from './i18n.js?v=2.2.2';
 import { Analytics } from './analytics.js?v=2.2.2';
 import ReferralSystem from './referral.js?v=2.2.2';
+import { Telemetry } from './telemetry.js?v=2.2.2';
+import Prefetcher from './prefetch.js?v=2.2.2';
+import { SeoDiagnostics } from './seo-diagnostics.js?v=2.2.2';
 import './ads.js?v=2.2.2';
+
+// Initialize Telemetry & Diagnostics
+Telemetry.init();
+
+// Initialize Predictive Route Prefetcher
+Prefetcher.init();
 
 // Initialize Global In-Memory SPA States
 window.missavJState = {
@@ -19,6 +28,9 @@ window.missavJState = {
   isFloating: false, // Flag to trace if the player is currently in Picture-in-Picture (PiP) mode
   currentPath: ''    // Holds the currently active SPA route path
 };
+
+// Global route abort controller to cancel pending API requests on navigation
+let currentRouteController = null;
 
 // Parameter Helper: Extracts value from query string parameters securely
 function getParam(name) {
@@ -176,35 +188,8 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
     </div>
   `;
 
-  // Hub card click events using high performance delegation
   const grid = document.getElementById('saved-video-grid');
   if (grid) {
-    grid.addEventListener('click', (e) => {
-      const actorTag = e.target.closest('.text-tag[data-actor]');
-      if (actorTag) {
-        e.stopPropagation();
-        const actorName = decodeURIComponent(actorTag.dataset.actor);
-        window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
-        return;
-      }
-
-      const studioName = e.target.closest('.text-tag[data-studio]');
-      if (studioName) {
-        e.stopPropagation();
-        const studio = decodeURIComponent(studioName.dataset.studio);
-        window.missavJNavigate(`/studio?name=${encodeURIComponent(studio)}`);
-        return;
-      }
-
-      const card = e.target.closest('.video-card');
-      if (card && !card.classList.contains('skeleton-card')) {
-        const postId = card.dataset.id;
-        const code = card.dataset.code || '';
-        const title = card.dataset.title || '';
-        window.missavJNavigateToWatch(postId, code, title);
-      }
-    });
-
     // Attach high-performance dynamic hover listeners for video previews
     bindHoverPreviews(grid);
   }
@@ -214,15 +199,15 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          () => import('./feed.js?v=2.2.2').then(m => m.init()),
-  '/trending':  () => import('./trending.js?v=2.2.2').then(m => m.init()),
-  '/recent':    () => import('./recent.js?v=2.2.2').then(m => m.init()),
-  '/search':    (q) => import('./search.js?v=2.2.2').then(m => m.init(q || getParam('q'))),
-  '/watch':     (id) => import('./player.js?v=2.2.2').then(m => m.init(id || window.missavJGetCurrentWatchId())),
-  '/category':  () => import('./feed.js?v=2.2.2').then(m => m.init({ category: getParam('name') })),
-  '/actor':     () => import('./feed.js?v=2.2.2').then(m => m.init({ actor: getParam('name') })),
-  '/studio':    () => import('./feed.js?v=2.2.2').then(m => m.init({ studio: getParam('name') })),
-  '/tag':       () => import('./feed.js?v=2.2.2').then(m => m.init({ tag: getParam('name') })),
+  '/':          (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({}, signal)),
+  '/trending':  (arg, signal) => import('./trending.js?v=2.2.2').then(m => m.init(signal)),
+  '/recent':    (arg, signal) => import('./recent.js?v=2.2.2').then(m => m.init(signal)),
+  '/search':    (q, signal) => import('./search.js?v=2.2.2').then(m => m.init(q || getParam('q'), signal)),
+  '/watch':     (id, signal) => import('./player.js?v=2.2.2').then(m => m.init(id || window.missavJGetCurrentWatchId(), signal)),
+  '/category':  (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({ category: getParam('name') }, signal)),
+  '/actor':     (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({ actor: getParam('name') }, signal)),
+  '/studio':    (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({ studio: getParam('name') }, signal)),
+  '/tag':       (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({ tag: getParam('name') }, signal)),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
   '/actors':          () => import('./actors.js?v=2.2.2').then(m => m.init()),
@@ -473,6 +458,34 @@ function updateDynamicMetaTags(routePath, canonicalUrl, cleanRoutePath) {
   if (typeof ui.renderBreadcrumbs === 'function') {
     ui.renderBreadcrumbs(cleanRoutePath, document.title);
   }
+
+  // === SEO REGRESSION SAFEGUARD ===
+  validateSEOState();
+}
+
+/**
+ * Validates that critical SEO tags are present in the DOM.
+ * Alerts developers loudly if a regression occurs.
+ */
+function validateSEOState() {
+  const canonical = document.querySelector('link[rel="canonical"]');
+  const metaDesc = document.querySelector('meta[name="description"]');
+  const jsonLd = document.getElementById('json-ld-data');
+  const title = document.title;
+
+  const errors = [];
+  if (!title || title.trim() === '') errors.push('document.title is missing or empty.');
+  if (!canonical || !canonical.href) errors.push('Canonical tag is missing or invalid.');
+  if (!metaDesc || !metaDesc.content) errors.push('Meta description is missing or empty.');
+  if (!jsonLd || !jsonLd.textContent) errors.push('JSON-LD schema script is missing or empty.');
+
+  if (errors.length > 0) {
+    console.error('[SEO REGRESSION ALERT] Critical SEO data is missing from the DOM:\n- ' + errors.join('\n- '));
+    Telemetry.logAnomaly('SEORegression', { errors, url: window.location.href });
+  }
+  
+  // Run advanced background SEO Audit
+  SeoDiagnostics.runAudit();
 }
 
 function navigate(urlPath) {
@@ -582,26 +595,64 @@ function navigate(urlPath) {
   const route = routes[matchedRoutePath] || routes['/'];
   
   const mainApp = document.getElementById('app-content');
-  if (mainApp) {
-    mainApp.innerHTML = '';
+  if (mainApp) mainApp.classList.add('page-exit');
+
+  // Cancel any pending API requests from the previous route early
+  if (currentRouteController) {
+    currentRouteController.abort();
   }
+  currentRouteController = new AbortController();
+  const signal = currentRouteController.signal;
+
+  setTimeout(() => {
+    // Show page shimmer skeletal states (Handles DOM wipe securely)
+    ui.showSkeletons(8);
+    
+    if (mainApp) {
+      mainApp.classList.remove('page-exit');
+      mainApp.classList.add('page-enter');
+      // Trigger CSS reflow for transition
+      void mainApp.offsetWidth;
+      mainApp.classList.add('page-enter-active');
+      
+      // Cleanup transition classes after animation finishes
+      setTimeout(() => {
+        mainApp.classList.remove('page-enter', 'page-enter-active');
+      }, 400);
+    }
+    
+    // Highlight active sidebar navigation indicators (pass full path + query for accurate matching)
+    highlightActiveSidebarItem(matchedRoutePath, window.location.search);
   
-  // Show page shimmer skeletal states
-  ui.showSkeletons(8);
-  
-  // Highlight active sidebar navigation indicators (pass full path + query for accurate matching)
-  highlightActiveSidebarItem(matchedRoutePath, window.location.search);
-  
-  // Scroll instantly to page top bounds
-  window.scrollTo({ top: 0, behavior: 'instant' });
+    // Session Persistence: save last valid route to sessionStorage
+    if (matchedRoutePath !== '/' || window.location.search !== '') {
+      sessionStorage.setItem('missavj_last_route', matchedRoutePath + window.location.search);
+    }
+    
+    // Scroll instantly to page top bounds
+    window.scrollTo({ top: 0, behavior: 'instant' });
 
   // Determine router initialization arguments dynamically
   let routeArg = undefined;
   if (matchedRoutePath === '/search') routeArg = getParam('q');
   if (matchedRoutePath === '/watch') routeArg = targetId;
 
+  const routeStartTime = performance.now();
+
   // Load and execute module script
-  route(routeArg).then(() => {
+  route(routeArg, signal).then((moduleResult) => {
+    // If it's an offline fallback render, show the UI badge/toast
+    if (moduleResult && moduleResult.isOfflineFallback) {
+       ui.showToast('You are browsing in Offline Mode', 5000);
+       // Add offline-mode class to body to allow CSS to show badges
+       document.body.classList.add('offline-mode');
+    } else {
+       document.body.classList.remove('offline-mode');
+    }
+
+    const routeDuration = performance.now() - routeStartTime;
+    Telemetry.trackRouteTransition(matchedRoutePath, routeDuration);
+
     i18n.translateStaticUI();
     // Wrap SEO/breadcrumb updates in try-catch so they never crash page content
     try {
@@ -615,9 +666,19 @@ function navigate(urlPath) {
       console.warn('Analytics tracking failed (non-critical):', analyticsErr.message);
     }
   }).catch(err => {
+    if (err.name === 'AbortError' || err.message.includes('aborted')) {
+      console.log(`Route ${matchedRoutePath} fetch aborted via navigation`);
+      return;
+    }
     console.error(`Error loading route ${matchedRoutePath}:`, err);
-    ui.showError(i18n.t('error_load_page', { message: err.message }));
+    if (!navigator.onLine) {
+       ui.showOfflineState();
+    } else {
+       ui.showError(i18n.t('error_load_page', { message: err.message }));
+    }
   });
+  
+  }, 150); // Delay for exit animation
 }
 
 /**
@@ -699,13 +760,20 @@ function setupScrollTopButton() {
   
   document.body.appendChild(scrollTopBtn);
 
+  let isScrollingTop = false;
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 300) {
-      scrollTopBtn.classList.add('visible');
-    } else {
-      scrollTopBtn.classList.remove('visible');
+    if (!isScrollingTop) {
+      window.requestAnimationFrame(() => {
+        if (window.scrollY > 300) {
+          scrollTopBtn.classList.add('visible');
+        } else {
+          scrollTopBtn.classList.remove('visible');
+        }
+        isScrollingTop = false;
+      });
+      isScrollingTop = true;
     }
-  });
+  }, { passive: true });
 
   scrollTopBtn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1626,11 +1694,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // Back to Top Button Logic
   const backToTopBtn = document.getElementById('back-to-top');
   if (backToTopBtn) {
+    let isScrollingBack = false;
     window.addEventListener('scroll', () => {
-      if (window.scrollY > 500) {
-        backToTopBtn.classList.remove('hidden');
-      } else {
-        backToTopBtn.classList.add('hidden');
+      if (!isScrollingBack) {
+        window.requestAnimationFrame(() => {
+          if (window.scrollY > 500) {
+            backToTopBtn.classList.remove('hidden');
+          } else {
+            backToTopBtn.classList.add('hidden');
+          }
+          isScrollingBack = false;
+        });
+        isScrollingBack = true;
       }
     }, { passive: true });
 
@@ -1712,5 +1787,51 @@ document.addEventListener('DOMContentLoaded', () => {
     navigate(window.location.pathname + window.location.search);
   });
   
-  navigate(window.location.pathname + window.location.search);
+  // Global PWA Offline / Online Recovery Handlers
+  window.addEventListener('offline', () => {
+    ui.showToast(i18n.t('offline_title') || 'You are offline', 4000);
+  });
+  window.addEventListener('online', () => {
+    ui.showToast('Connection restored! Refreshing...', 3000);
+    // Graceful reconnect recovery
+    setTimeout(() => {
+      navigate(window.location.pathname + window.location.search);
+    }, 1000);
+  });
+
+  // Session Continuity: Check if app was resumed from background and prompt
+  const lastRoute = sessionStorage.getItem('missavj_last_route');
+  const isDirectRoot = window.location.pathname === '/' || window.location.pathname === `/${i18n.getLang()}/`;
+  const isNoSearch = window.location.search === '' || window.location.search === '?source=pwa';
+  
+  if (isDirectRoot && isNoSearch && lastRoute && lastRoute !== '/') {
+    // Render the root feed first, then show a resume toast
+    navigate(window.location.pathname + window.location.search);
+    setTimeout(() => {
+       const container = document.getElementById('toast-container');
+       if (container) {
+          const toast = document.createElement('div');
+          toast.className = 'toast show';
+          toast.style.cursor = 'pointer';
+          toast.style.background = 'var(--color-accent)';
+          toast.style.color = '#000';
+          toast.innerHTML = `<strong>Resume Session?</strong> Click to return to your last page.`;
+          toast.onclick = () => {
+             toast.classList.remove('show');
+             window.missavJNavigate(lastRoute);
+          };
+          container.appendChild(toast);
+          setTimeout(() => {
+             toast.classList.remove('show');
+             setTimeout(() => toast.remove(), 300);
+          }, 8000);
+       }
+    }, 1500);
+  } else {
+    // Normal load
+    navigate(window.location.pathname + window.location.search);
+  }
+  
+  // Tandai bahwa app sudah hydrated — sembunyikan SEO fallback
+  document.body.classList.add('app-ready');
 });

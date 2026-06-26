@@ -490,9 +490,36 @@
 }
 
 .related-match-badge.match-category {
-  background: rgba(41, 182, 246, 0.12);
-  color: #4fc3f7;
-  border: 1px solid rgba(41, 182, 246, 0.25);
+  background-color: rgba(233, 30, 99, 0.2);
+  color: #f48fb1;
+}
+
+.match-discovery {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: #ffe082;
+}
+
+/* Up Next Visual Hook */
+.related-video-card.up-next-highlight {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-left: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+.up-next-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 20;
+  background-color: var(--color-primary);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 /* ==========================================

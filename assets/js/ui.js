@@ -40,9 +40,10 @@ const ui = {
     }
     try {
       // Base64 encode the URL to bypass AdBlocker keyword blocks on "apijav"
-      return `/api/image?url=${btoa(url)}`;
+      // Add &w=320 hint for Edge CDN resizer to massively save bandwidth
+      return `/api/image?url=${btoa(url)}&w=320`;
     } catch (e) {
-      return `/api/image?url=${encodeURIComponent(url)}`;
+      return `/api/image?url=${encodeURIComponent(url)}&w=320`;
     }
   },
 
@@ -169,6 +170,34 @@ const ui = {
         window.location.reload();
       });
     }
+  },
+
+  /**
+   * Shows a dedicated Offline UI when no network and no cache is available.
+   */
+  showOfflineState(container = null) {
+    const target = container || document.getElementById('app-content');
+    if (!target) return;
+
+    const i18n = window.i18n;
+    const title = i18n ? i18n.t('offline_title') || 'No Internet Connection' : 'No Internet Connection';
+    const msg = i18n ? i18n.t('offline_desc') || 'Please check your network and try again.' : 'Please check your network and try again.';
+    const btn = i18n ? i18n.t('offline_retry') || 'Reconnect' : 'Reconnect';
+
+    target.innerHTML = `
+      <div class="empty-state-premium error-state-premium">
+        <div class="error-state-glow" style="background: radial-gradient(circle at center, rgba(150, 150, 150, 0.15), transparent 70%);"></div>
+        <div class="empty-icon error-icon" style="color: var(--color-text-muted);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M8.53 8.53C5.52 10.3 3.1 13.06 1.5 16.5c4.71-3.69 10.22-4.47 15.53-2.61"/><path d="M16.74 12.74C18.8 13.72 20.61 15 22.5 16.5c-2.35-3.32-5.46-5.83-9-7.34"/><path d="M4.66 4.66C8.2 3.01 12 2.5 15.8 3.32"/></svg>
+        </div>
+        <h3 class="error-title">${title}</h3>
+        <p class="error-desc">${msg}</p>
+        <button onclick="window.location.reload()" class="error-state-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          ${btn}
+        </button>
+      </div>
+    `;
   },
 
   /**
@@ -315,8 +344,94 @@ const ui = {
   renderBreadcrumbs(routePath, title = '') {
     const breadcrumbNav = document.getElementById('breadcrumb-nav');
     if (!breadcrumbNav) return;
-    breadcrumbNav.classList.add('hidden');
-    breadcrumbNav.innerHTML = '';
+    
+    // Check if we are on the homepage
+    if (routePath === '/' || routePath === '') {
+      breadcrumbNav.classList.add('hidden');
+      breadcrumbNav.innerHTML = '';
+      return;
+    }
+    
+    const lang = localStorage.getItem('missav_lang') || 'en';
+    const segments = routePath.split('?')[0].split('/').filter(Boolean);
+    
+    let html = `<ol itemscope itemtype="https://schema.org/BreadcrumbList" class="breadcrumb-list">`;
+    
+    // Home
+    html += `
+      <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="/${lang}/">
+          <span itemprop="name">Beranda</span>
+        </a>
+        <meta itemprop="position" content="1" />
+      </li>
+    `;
+    
+    let currentPath = `/${lang}`;
+    let position = 2;
+    
+    if (segments.length > 0 && segments[0] !== '') {
+      const rootSegment = segments[0];
+      
+      const rootNames = {
+        'trending': 'Trending',
+        'categories': 'Kategori',
+        'actors': 'Aktor',
+        'studios': 'Studio',
+        'recent': 'Terbaru',
+        'watch': 'Watch',
+        'actor': 'Aktor',
+        'studio': 'Studio',
+        'search': 'Pencarian'
+      };
+      
+      const rootName = rootNames[rootSegment] || (rootSegment.charAt(0).toUpperCase() + rootSegment.slice(1));
+      const isWatch = rootSegment === 'watch';
+      const isLast = segments.length === 1 && !title;
+      
+      if (!isWatch) {
+        html += `
+          <li class="breadcrumb-separator">/</li>
+          <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+            ${isLast || rootSegment === 'search' || rootSegment === 'actor' || rootSegment === 'studio'
+              ? `<span itemprop="name">${rootName}</span>` 
+              : `<a itemprop="item" href="${currentPath}/${rootSegment}"><span itemprop="name">${rootName}</span></a>`
+            }
+            <meta itemprop="position" content="${position}" />
+          </li>
+        `;
+        position++;
+      }
+      
+      if (rootSegment === 'actor' || rootSegment === 'studio' || rootSegment === 'search') {
+         const urlParams = new URLSearchParams(window.location.search);
+         const q = urlParams.get('name') || urlParams.get('q');
+         if (q) {
+           html += `
+             <li class="breadcrumb-separator">/</li>
+             <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+               <span itemprop="name">${this.escapeHTML(q)}</span>
+               <meta itemprop="position" content="${position}" />
+             </li>
+           `;
+           position++;
+         }
+      } else if (title) {
+        const shortTitle = title.length > 40 ? title.substring(0, 40) + '...' : title;
+        html += `
+          <li class="breadcrumb-separator">/</li>
+          <li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+            <span itemprop="name" title="${this.escapeHTML(title)}">${this.escapeHTML(shortTitle)}</span>
+            <meta itemprop="position" content="${position}" />
+          </li>
+        `;
+        position++;
+      }
+    }
+    
+    html += `</ol>`;
+    breadcrumbNav.innerHTML = html;
+    breadcrumbNav.classList.remove('hidden');
   }
 };
 

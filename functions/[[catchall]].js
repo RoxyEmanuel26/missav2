@@ -45,7 +45,8 @@ function formatDuration(durationStr) {
 async function fetchPostMetadata(id, origin) {
   const apiUrl = `${TARGET_BASE}/posts/${id}`;
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+  // TIMEOUT SAFETY: Reduced to 3.5s to ensure worker never hits limits. Fallback is raw HTML.
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
 
   try {
     const res = await fetch(apiUrl, {
@@ -73,7 +74,7 @@ async function getTranslatedTitle(id, lang, supabaseUrl, supabaseKey) {
   if (!lang || lang === 'en' || !supabaseUrl || !supabaseKey) return null;
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 4000); // 4s timeout
+  const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
 
   try {
     const res = await fetch(
@@ -110,6 +111,13 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+const BOT_REGEX = /bot|crawl|spider|slurp|yahoo|mediapartners|googlebot|yandex|duckduckbot|facebookexternalhit|twitterbot|whatsapp|telegram|discordbot/i;
+
+function isBot(userAgent) {
+  if (!userAgent) return false;
+  return BOT_REGEX.test(userAgent);
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
@@ -129,11 +137,34 @@ export async function onRequest(context) {
   const isList = pathname.match(listRegex);
   const isCacheableRoute = isGet && (isWatch || isList);
 
+  const userAgent = request.headers.get('User-Agent') || '';
+  const requestIsBot = isBot(userAgent);
   let cache = null;
+  let cacheKey = null;
+
   if (isCacheableRoute) {
+    // ==== FAST PATH (Humans) ====
+    // Bypass all fetching and regex for humans. Drastically improves TTFB and scalability.
+    if (!requestIsBot) {
+      const indexResponse = await env.ASSETS.fetch(new URL('/index.html', request.url));
+      return new Response(indexResponse.body, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=3600'
+        }
+      });
+    }
+
+    // ==== SEO PATH (Bots) ====
     try {
+      // Normalize cache key by removing tracking params
+      const cleanUrl = new URL(request.url);
+      const trackingParams = ['fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'msclkid'];
+      trackingParams.forEach(param => cleanUrl.searchParams.delete(param));
+      cacheKey = new Request(cleanUrl.toString(), request);
+
       cache = caches.default;
-      const cachedResponse = await cache.match(request);
+      const cachedResponse = await cache.match(cacheKey);
       if (cachedResponse) {
         return cachedResponse;
       }
@@ -158,6 +189,11 @@ export async function onRequest(context) {
         } else if (slug.match(/^\d+$/)) {
           id = slug;
         }
+      }
+      
+      // Fallback to query parameter if slug extraction fails (e.g. /watch?id=123)
+      if (!id) {
+        id = url.searchParams.get('id');
       }
 
       const indexResponse = await env.ASSETS.fetch(new URL('/index.html', request.url));
@@ -194,7 +230,18 @@ export async function onRequest(context) {
               imageUrl = `${url.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
             }
 
-            const pageUrl = `${url.origin}${url.pathname}${url.search}`;
+            // Canonical Normalization
+            const canonicalPath = slug ? `/watch/${slug}` : `/watch?id=${id}`;
+            const canonicalUrl = `${url.origin}${activeLang === 'en' ? '' : '/' + activeLang}${canonicalPath}`;
+            const pageUrl = canonicalUrl;
+
+            // Generate Hreflang tags
+            const hreflangTags = VALID_LANGS.map(l => {
+              const langPrefix = l === 'en' ? '' : `/${l}`;
+              return `<link rel="alternate" hreflang="${l}" href="${url.origin}${langPrefix}${canonicalPath}" />`;
+            });
+            hreflangTags.push(`<link rel="alternate" hreflang="x-default" href="${url.origin}${canonicalPath}" />`);
+            const hreflangHtml = hreflangTags.join('\n    ');
 
             htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(fullTitle)}</title>`);
             htmlContent = htmlContent.replace(
@@ -203,7 +250,7 @@ export async function onRequest(context) {
             );
             htmlContent = htmlContent.replace(
               /<link rel="canonical" id="canonical-url" href="[^"]*"/i,
-              `<link rel="canonical" id="canonical-url" href="${escapeHtml(pageUrl)}"`
+              `<link rel="canonical" id="canonical-url" href="${escapeHtml(canonicalUrl)}">\n    ${hreflangHtml}`
             );
             htmlContent = htmlContent.replace(
               /<meta property="og:url" id="og-url" content="[^"]*"/i,
@@ -248,28 +295,13 @@ export async function onRequest(context) {
                 "name": title,
                 "description": description,
                 "thumbnailUrl": imageUrl,
-                "uploadDate": post.date ? new Date(post.date).toISOString() : new Date().toISOString(),
+                "uploadDate": post.date ? new Date(post.date).toISOString() : "2024-01-01T00:00:00.000Z",
                 "embedUrl": cleanEmbedUrl,
-                "publisher": {
-                  "@type": "Organization",
-                  "name": "MISSAV-J",
-                  "url": "https://www.missav-j.my.id",
-                  "logo": {
-                    "@type": "ImageObject",
-                    "url": "https://www.missav-j.my.id/assets/images/logo.png"
-                  }
-                },
-                "inLanguage": "ja"
+                "publisher": { "@id": "https://www.missav-j.my.id/#organization" },
+                "inLanguage": activeLang
               };
 
               if (isoDuration) videoSchema.duration = isoDuration;
-              if (post.views) {
-                videoSchema.interactionStatistic = {
-                  "@type": "InteractionCounter",
-                  "interactionType": { "@type": "WatchAction" },
-                  "userInteractionCount": parseInt(post.views) || 0
-                };
-              }
               if (actorsList.length > 0) videoSchema.actor = actorsList;
               if (genreList.length > 0) videoSchema.genre = genreList;
               if (post.studio) {
@@ -298,9 +330,31 @@ export async function onRequest(context) {
                 ]
               };
 
+              // Base Website & Organization to preserve global schema
+              const websiteSchema = {
+                "@type": "WebSite",
+                "@id": "https://www.missav-j.my.id/#website",
+                "name": "MISSAV-J",
+                "url": "https://www.missav-j.my.id",
+                "potentialAction": {
+                  "@type": "SearchAction",
+                  "target": { "@type": "EntryPoint", "urlTemplate": "https://www.missav-j.my.id/en/search?q={search_term_string}" },
+                  "query-input": "required name=search_term_string"
+                },
+                "publisher": { "@id": "https://www.missav-j.my.id/#organization" }
+              };
+              
+              const organizationSchema = {
+                "@type": "Organization",
+                "@id": "https://www.missav-j.my.id/#organization",
+                "name": "MISSAV-J",
+                "url": "https://www.missav-j.my.id",
+                "logo": { "@type": "ImageObject", "url": "https://www.missav-j.my.id/assets/images/logo.png" }
+              };
+
               const structuredData = {
                 "@context": "https://schema.org",
-                "@graph": [videoSchema, breadcrumbSchema]
+                "@graph": [websiteSchema, organizationSchema, videoSchema, breadcrumbSchema]
               };
               htmlContent = htmlContent.replace(
                 /<script type="application\/ld\+json" id="json-ld-data">[\s\S]*?<\/script>/i,
@@ -331,8 +385,8 @@ export async function onRequest(context) {
         }
       });
 
-      if (cache && isCacheableRoute) {
-        context.waitUntil(cache.put(request, watchResponse.clone()));
+      if (cache && isCacheableRoute && cacheKey) {
+        context.waitUntil(cache.put(cacheKey, watchResponse.clone()));
       }
 
       return watchResponse;
@@ -389,7 +443,19 @@ export async function onRequest(context) {
           pageDesc = `Browse videos from top JAV studios and production companies.`;
         }
 
-        const pageUrl = `${url.origin}${url.pathname}${url.search}`;
+        // Canonical Normalization
+        const queryPart = nameParam ? `?name=${encodeURIComponent(nameParam)}` : '';
+        const canonicalPath = `/${type}${queryPart}`;
+        const canonicalUrl = `${url.origin}${activeLang === 'en' ? '' : '/' + activeLang}${canonicalPath}`;
+        const pageUrl = canonicalUrl;
+
+        // Generate Hreflang tags
+        const hreflangTags = VALID_LANGS.map(l => {
+          const langPrefix = l === 'en' ? '' : `/${l}`;
+          return `<link rel="alternate" hreflang="${l}" href="${url.origin}${langPrefix}${canonicalPath}" />`;
+        });
+        hreflangTags.push(`<link rel="alternate" hreflang="x-default" href="${url.origin}${canonicalPath}" />`);
+        const hreflangHtml = hreflangTags.join('\n    ');
         
         htmlContent = htmlContent.replace(/<title>[^<]*<\/title>/i, `<title>${pageTitle}</title>`);
         htmlContent = htmlContent.replace(
@@ -398,7 +464,7 @@ export async function onRequest(context) {
         );
         htmlContent = htmlContent.replace(
           /<link rel="canonical" id="canonical-url" href="[^"]*"/i,
-          `<link rel="canonical" id="canonical-url" href="${escapeHtml(pageUrl)}"`
+          `<link rel="canonical" id="canonical-url" href="${escapeHtml(canonicalUrl)}">\n    ${hreflangHtml}`
         );
         htmlContent = htmlContent.replace(
           /<meta property="og:url" id="og-url" content="[^"]*"/i,
@@ -425,7 +491,6 @@ export async function onRequest(context) {
         let schemaJson = {};
         if (schemaType === 'ProfilePage' && nameParam) {
           schemaJson = {
-            "@context": "https://schema.org",
             "@type": "ProfilePage",
             "mainEntity": {
               "@type": "Person",
@@ -435,7 +500,6 @@ export async function onRequest(context) {
           };
         } else {
           schemaJson = {
-            "@context": "https://schema.org",
             "@type": "CollectionPage",
             "name": pageTitle,
             "description": pageDesc,
@@ -461,10 +525,32 @@ export async function onRequest(context) {
             }
           ]
         };
+
+        // Base Website & Organization
+        const websiteSchema = {
+          "@type": "WebSite",
+          "@id": "https://www.missav-j.my.id/#website",
+          "name": "MISSAV-J",
+          "url": "https://www.missav-j.my.id",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": { "@type": "EntryPoint", "urlTemplate": "https://www.missav-j.my.id/en/search?q={search_term_string}" },
+            "query-input": "required name=search_term_string"
+          },
+          "publisher": { "@id": "https://www.missav-j.my.id/#organization" }
+        };
+        
+        const organizationSchema = {
+          "@type": "Organization",
+          "@id": "https://www.missav-j.my.id/#organization",
+          "name": "MISSAV-J",
+          "url": "https://www.missav-j.my.id",
+          "logo": { "@type": "ImageObject", "url": "https://www.missav-j.my.id/assets/images/logo.png" }
+        };
         
         const structuredData = {
           "@context": "https://schema.org",
-          "@graph": [schemaJson, breadcrumbSchema]
+          "@graph": [websiteSchema, organizationSchema, schemaJson, breadcrumbSchema]
         };
         
         htmlContent = htmlContent.replace(
@@ -489,8 +575,8 @@ export async function onRequest(context) {
           }
         });
 
-        if (cache && isCacheableRoute) {
-          context.waitUntil(cache.put(request, listResponse.clone()));
+        if (cache && isCacheableRoute && cacheKey) {
+          context.waitUntil(cache.put(cacheKey, listResponse.clone()));
         }
 
         return listResponse;

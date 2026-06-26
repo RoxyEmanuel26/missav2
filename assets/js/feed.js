@@ -9,6 +9,7 @@ import api from './api.js?v=2.2.2';
 import ui from './ui.js?v=2.2.2';
 import filter from './filter.js?v=2.2.2';
 import i18n from './i18n.js?v=2.2.2';
+import { SessionHistory } from './history.js?v=2.2.2';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -16,7 +17,10 @@ let totalPages = 1;
 let isLoading = false;
 let hasMore = true;
 let currentFilters = {};
+let isRandomizing = false;
 let intersectionObserver = null;
+let lastScrollTrigger = 0; // Throttle to prevent scroll floods
+let scrollPenaltyUntil = 0; // Backoff cooldown when API fails
 let seenCodes = new Set();
 let seenTitles = new Set();
 let totalRenderedVideos = 0;
@@ -101,13 +105,15 @@ export function renderVideoCard(post, index = 0) {
 
   const uncensoredBadge = isUncensored ? `<span class="card-uncensored">${i18n.t('badge_uncensored')}</span>` : '';
 
+  const currentLang = i18n.getLang();
+
   // Sanitize actor listings (Limit to first 3 chips for UX clarity)
   const actors = Array.isArray(post.actors) ? post.actors : (post.actors ? [post.actors] : []);
   const actorsMarkup = actors
     .slice(0, 3) 
     .map(a => {
       const safeActor = ui.escapeHTML(a);
-      return `<span class="actor-chip" data-actor="${encodeURIComponent(safeActor)}">${safeActor}</span>`;
+      return `<a href="/${currentLang}/actor?name=${encodeURIComponent(safeActor)}" class="actor-chip" data-actor="${encodeURIComponent(safeActor)}">${safeActor}</a>`;
     })
     .join('');
 
@@ -120,7 +126,7 @@ export function renderVideoCard(post, index = 0) {
 
   // Format Studio link
   const studioMarkup = safeStudio 
-    ? `<span class="text-tag" data-studio="${encodeURIComponent(safeStudio)}">${safeStudio}</span>`
+    ? `<a href="/${currentLang}/studio?name=${encodeURIComponent(safeStudio)}" class="text-tag" data-studio="${encodeURIComponent(safeStudio)}">${safeStudio}</a>`
     : `<span class="text-tag text-muted" data-studio="Other">${i18n.t('unknown_studio')}</span>`;
 
   // Format views
@@ -133,13 +139,48 @@ export function renderVideoCard(post, index = 0) {
   const safeEmbedUrl = ui.escapeHTML((post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&'));
 
   const cardVariant = index === 0 ? 'card-cinematic' : 'card-editorial';
+  
+  // Advanced Image Loading Strategy for Core Web Vitals
+  const isLCP = index === 0;
+  const isAboveFold = index < 4;
+  const imgAttributes = `width="320" height="180" style="aspect-ratio: 16/9; background: #000;" decoding="async" ${isAboveFold ? '' : 'loading="lazy"'} ${isLCP ? 'fetchpriority="high"' : ''} onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"`;
+
+  // Semantic Watch Link
+  const watchUrl = window.missavJGetWatchUrl ? window.missavJGetWatchUrl(safeId, safeCode, safeTitle) : `/watch/${safeId}`;
+  
+  // [SOCIAL SIGNALS] Heuristic calculation of live viewers based on views and recency proxy
+  const rawViews = parseInt(post.views, 10) || 0;
+  const postId = parseInt(post.id, 10) || 0;
+  // A deterministic pseudo-random formula that scales with total views
+  const timeSeed = new Date().getHours();
+  const liveRatio = 0.005 + (Math.abs(Math.sin(postId + timeSeed)) * 0.015); // Between 0.5% and 2%
+  let liveViewers = Math.floor(rawViews * liveRatio);
+  // Ensure a base minimum for highly viewed videos to prevent 0
+  if (rawViews > 10000 && liveViewers < 12) liveViewers = 12 + (postId % 30);
+  if (rawViews > 50000 && liveViewers < 45) liveViewers = 45 + (postId % 80);
+  // Cap it so it doesn't look completely ridiculous
+  if (liveViewers > 4500) liveViewers = 4500 + (postId % 500);
+
+  let socialProofHtml = '';
+  if (liveViewers > 10) {
+    const isHot = liveViewers > 500 || post._isTrending;
+    socialProofHtml = `
+      <div class="social-proof-meta">
+        <span class="live-pulse-dot ${isHot ? 'hot' : ''}"></span>
+        <span>${liveViewers.toLocaleString()} watching</span>
+      </div>
+    `;
+  }
+
+  const semanticHref = `/${currentLang}${watchUrl}`;
 
   // For cinematic card, overlay metadata is used. For editorial, it's below the thumb.
   if (index === 0) {
     return `
-      <article class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+      <a href="${semanticHref}" class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
         <div class="card-thumb">
-          <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';">
+          <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" ${imgAttributes}>
+          ${post._isTrending ? `<span class="badge badge-trending">TRENDING</span>` : ''}
           ${uncensoredBadge ? `<span class="badge badge-uncensored">${i18n.t('badge_uncensored')}</span>` : ''}
           ${durationBadge ? `<span class="badge badge-duration">${safeDuration}</span>` : ''}
           ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
@@ -151,15 +192,17 @@ export function renderVideoCard(post, index = 0) {
             <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
             <span class="card-code">${safeCode}</span>
           </div>
+          ${socialProofHtml}
           <h3 class="card-title" title="${safeTitle}" data-original-title="${safeOriginalTitleAttr}">${safeTitle}</h3>
         </div>
-      </article>
+      </a>
     `;
   } else {
     return `
-      <article class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+      <a href="${semanticHref}" class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
         <div class="card-thumb">
-          <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';">
+          <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" ${imgAttributes}>
+          ${post._isTrending ? `<span class="badge badge-trending">TRENDING</span>` : ''}
           ${uncensoredBadge ? `<span class="badge badge-uncensored">${i18n.t('badge_uncensored')}</span>` : ''}
           ${durationBadge ? `<span class="badge badge-duration">${safeDuration}</span>` : ''}
           ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
@@ -173,8 +216,9 @@ export function renderVideoCard(post, index = 0) {
             <span class="card-dot">•</span>
             <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
           </div>
+          ${socialProofHtml}
         </div>
-      </article>
+      </a>
     `;
   }
 }
@@ -182,8 +226,9 @@ export function renderVideoCard(post, index = 0) {
 /**
  * Initializes the homepage feed listing
  * @param {Object} [filters] - Route filter overrides (e.g. category parsed from relative routing paths)
+ * @param {AbortSignal} [signal] - Global route abort controller signal
  */
-export async function init(filters = {}) {
+export async function init(filters = {}, signal) {
   // Dispose of active IntersectionObservers running from prior SPA page context loops
   if (intersectionObserver) {
     intersectionObserver.disconnect();
@@ -277,9 +322,39 @@ export async function init(filters = {}) {
     }
   }
 
+  // --- Session Intelligence: Continue Watching ---
+  let continueWatchingHtml = '';
+  if (randomMode) { // Only on root homepage
+    const history = SessionHistory.getHistory();
+    if (history && history.length > 0) {
+      // Render a mini-row of recently watched videos
+      const historyCards = history.slice(0, 4).map(post => `
+        <a href="${window.missavJGetWatchUrl ? window.missavJGetWatchUrl(post.id, post.code, post.title) : `/watch/${post.id}`}" class="history-card" title="${ui.escapeHTML(post.title)}">
+          <div class="history-thumb"><img src="${ui.getProxiedThumbnail(post.thumbnail)}" loading="lazy" style="aspect-ratio:16/9; width:100%; object-fit:cover; border-radius:8px;"></div>
+          <div class="history-title" style="font-size:0.8rem; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-primary);">${ui.escapeHTML(post.title)}</div>
+        </a>
+      `).join('');
+      
+      continueWatchingHtml = `
+        <div class="continue-watching-section fadeInUp" style="margin-bottom: 24px; padding: 16px; background: rgba(255,255,255,0.02); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05);">
+          <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            ${i18n.t('continue_watching') || 'Continue Watching'}
+          </h3>
+          <div class="history-row" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+            ${historyCards}
+          </div>
+        </div>
+      `;
+    }
+  }
+
   mainApp.innerHTML = `
     <!-- Dynamic Taxonomy Banner -->
     ${taxonomyBannerHtml}
+    
+    <!-- Session Intelligence Row -->
+    ${continueWatchingHtml}
     
     <div class="feed-controls-wrapper">
       <!-- Sticky Horizontal Filter Bar Container -->
@@ -311,7 +386,7 @@ export async function init(filters = {}) {
   filter.init(document.getElementById('filter-bar-container'), currentFilters, updateFeedFilters);
 
   // 4. Fire initial listings fetch
-  await fetchAndRenderFeed(true);
+  await fetchAndRenderFeed(true, signal);
 
   // 5. Setup IntersectionObserver configurations for infinite scrolls
   setupInfiniteScroll();
@@ -324,10 +399,37 @@ export async function init(filters = {}) {
 }
 
 /**
+ * Adaptive Client-Side Trending Engine
+ * Calculates a momentum score to surface trending videos and simulate feed liveliness.
+ */
+function applyTrendingAlgorithm(posts) {
+  // Use a time-based seed that shifts every 4 hours to keep the feed fresh
+  const timeSeed = Math.floor(Date.now() / (1000 * 60 * 60 * 4)); 
+  
+  return posts.map(post => {
+    const views = parseInt(post.views, 10) || 0;
+    const id = parseInt(post.id, 10) || 0;
+    
+    // Create a pseudo-random multiplier based on video ID and the 4-hour time seed.
+    // This gives some videos a temporary "viral boost" that rotates out.
+    const livelinessFactor = 0.7 + (Math.abs(Math.sin(id + timeSeed)) * 0.6); // Multiplier between 0.7 and 1.3
+    
+    // Normalize recency (ID) into a bonus score (assuming IDs are in the tens of thousands)
+    const recencyBonus = id * 0.05;
+    
+    // Final Momentum Score
+    const score = (views * livelinessFactor) + recencyBonus;
+    
+    return { ...post, _trendScore: score };
+  }).sort((a, b) => b._trendScore - a._trendScore);
+}
+
+/**
  * Fetch and render listings from API endpoints
  * @param {boolean} isInitial - Overwrites existing grid list markup if true
+ * @param {AbortSignal} [signal] - Global route abort signal
  */
-async function fetchAndRenderFeed(isInitial = false) {
+async function fetchAndRenderFeed(isInitial = false, signal) {
   isLoading = true;
   
   try {
@@ -344,7 +446,13 @@ async function fetchAndRenderFeed(isInitial = false) {
     
     usedPages.add(fetchPage);
 
-    const data = await api.getPosts({ page: fetchPage, ...currentFilters });
+    const data = await api.getPosts({ page: fetchPage, ...currentFilters, signal });
+
+    // Zombie DOM Prevention: if route was aborted during fetch, abort render gracefully
+    if (signal && signal.aborted) {
+      isLoading = false;
+      return;
+    }
 
     // Shuffle results client-side in random mode for a fresh feel
     if (randomMode && data.posts.length > 1) {
@@ -379,7 +487,12 @@ async function fetchAndRenderFeed(isInitial = false) {
         if (nameParts.length >= 2) {
           const swappedName = nameParts.reverse().join(' ');
           console.log(`[Feed] Actor "${currentFilters.actor}" returned 0 results, retrying with swapped name: "${swappedName}"`);
-          const retryData = await api.getPosts({ page: currentPage, ...currentFilters, actor: swappedName });
+          const retryData = await api.getPosts({ page: currentPage, ...currentFilters, actor: swappedName, signal });
+          
+          if (signal && signal.aborted) {
+            isLoading = false;
+            return;
+          }
 
           if (retryData.posts.length > 0) {
             // Success! Update filters and UI to reflect the corrected name
@@ -431,7 +544,7 @@ async function fetchAndRenderFeed(isInitial = false) {
     }
 
     // Deduplikasi posts berdasarkan JAV code dan Title unik
-    const uniquePosts = data.posts.filter(p => {
+    let uniquePosts = data.posts.filter(p => {
       const code = (p.code || '').trim().toUpperCase();
       if (code && seenCodes.has(code)) return false;
       const title = (p.title || '').trim().toLowerCase();
@@ -441,9 +554,47 @@ async function fetchAndRenderFeed(isInitial = false) {
       return true;
     });
 
+    // ── [ENGAGEMENT OPTIMIZATION] TRENDING INJECTION ──
+    // Only apply trending logic on the absolute root homepage (no search, no category filters)
+    // Extracting trending logic dynamically on the client prevents backend cache busting.
+    const isRootHomepage = Object.keys(currentFilters).length === 0 && !randomMode;
+    
+    let trendingHtml = '';
+    if (isInitial && isRootHomepage && uniquePosts.length >= 8) {
+      // Score and sort posts by momentum
+      uniquePosts = applyTrendingAlgorithm(uniquePosts);
+      
+      // Extract top 4 trending posts
+      const trendingPosts = uniquePosts.splice(0, 4);
+      
+      trendingHtml += `
+        <div class="trending-section">
+          <div class="trending-header">
+            <span class="trending-icon">🔥</span>
+            <span>Trending Now</span>
+          </div>
+          <div class="trending-grid">
+      `;
+      trendingPosts.forEach((post) => {
+        post._isTrending = true; 
+        totalRenderedVideos++;
+        trendingHtml += renderVideoCard(post, totalRenderedVideos - 1);
+      });
+      trendingHtml += `
+          </div>
+        </div>
+      `;
+    }
+
     // Build cards list markup applying cascade staggered delays
     let cardsHtml = '';
+    
+    // Reshuffle the standard root feed slightly for liveliness 
+    // so returning visitors see different mid-tier videos mixed in
+    if (isRootHomepage) shuffleArray(uniquePosts);
+
     uniquePosts.forEach((post) => {
+      post._isTrending = false;
       totalRenderedVideos++;
       cardsHtml += renderVideoCard(post, totalRenderedVideos - 1);
       if (totalRenderedVideos % 12 === 0) {
@@ -452,7 +603,7 @@ async function fetchAndRenderFeed(isInitial = false) {
     });
 
     if (isInitial) {
-      grid.innerHTML = cardsHtml;
+      grid.innerHTML = trendingHtml + cardsHtml;
     } else {
       grid.insertAdjacentHTML('beforeend', cardsHtml);
     }
@@ -460,13 +611,20 @@ async function fetchAndRenderFeed(isInitial = false) {
     loadInlineGridAds();
 
   } catch (error) {
+    isLoading = false;
+    if (error.message.includes('aborted')) return;
+    
     console.error('Fetch Feed Error:', error);
     const grid = document.getElementById('video-grid');
     if (!grid) return;
+    
     if (isInitial) {
       ui.showError(error.message, grid);
     } else {
-      ui.showToast(i18n.t('error_load_more'));
+      ui.showToast(i18n.t('error_load_more') || 'Gagal memuat. Menunggu sebentar...');
+      // API Failure Backoff: If infinite scroll fails, disable it for 15 seconds 
+      // to prevent users/bots from hammering the failing API by continuing to scroll
+      scrollPenaltyUntil = Date.now() + 15000;
     }
   } finally {
     isLoading = false;
@@ -482,7 +640,16 @@ function setupInfiniteScroll() {
   if (!sentinel) return;
 
   intersectionObserver = new IntersectionObserver(async (entries) => {
+    const now = Date.now();
+    
+    // 1. Throttle: Max 1 scroll fetch per second to prevent flooding
+    if (now - lastScrollTrigger < 1000) return;
+    
+    // 2. Penalty Backoff: Block scroll if we recently hit an API error
+    if (now < scrollPenaltyUntil) return;
+    
     if (entries[0].isIntersecting && !isLoading && hasMore) {
+      lastScrollTrigger = now;
       if (loader) loader.classList.remove('hidden');
       
       if (randomMode && totalPages > 1) {
@@ -537,33 +704,9 @@ async function updateFeedFilters(updatedFilters) {
  * Attaches click event delegations to video card grids
  */
 function bindGridClicks(grid) {
-  if (!grid) return;
-
-  grid.addEventListener('click', (e) => {
-    const actorChip = e.target.closest('.actor-chip');
-    if (actorChip) {
-      e.stopPropagation();
-      const actorName = decodeURIComponent(actorChip.dataset.actor);
-      window.missavJNavigate(`/actor?name=${encodeURIComponent(actorName)}`);
-      return;
-    }
-
-    const studioName = e.target.closest('.card-studio');
-    if (studioName) {
-      e.stopPropagation();
-      const studio = decodeURIComponent(studioName.dataset.studio);
-      window.missavJNavigate(`/studio?name=${encodeURIComponent(studio)}`);
-      return;
-    }
-
-    const card = e.target.closest('.video-card');
-    if (card && !card.classList.contains('skeleton-card')) {
-      const postId = card.dataset.id;
-      const code = card.dataset.code || '';
-      const title = card.dataset.title || '';
-      window.missavJNavigateToWatch(postId, code, title);
-    }
-  });
+  // Obsolete: Click interception is now natively and globally handled 
+  // by the SPA anchor router in app.js because all cards/chips are semantic <a> tags.
+  return;
 }
 
 // Hover live previews isolators variables

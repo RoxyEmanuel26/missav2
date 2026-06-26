@@ -157,7 +157,7 @@ function Add-Alternates {
 
 # Header XML urlset
 function Get-UrlsetOpen {
-    return '<?xml version="1.0" encoding="UTF-8"?>' + "`r`n" + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' + "`r`n"
+    return '<?xml version="1.0" encoding="UTF-8"?>' + "`r`n" + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">' + "`r`n"
 }
 
 # Ambil data terjemahan batch dari database Supabase
@@ -559,6 +559,10 @@ for ($page = 1; $page -le $totalPages; $page++) {
         $code    = if ($post.code) { $post.code } else { '' }
         $title   = if ($post.title) { $post.title } else { '' }
         $dateVal = if ($post.date -and $post.date.Length -ge 10) { $post.date.Substring(0, 10) } else { $todayStr }
+        
+        $thumbnail = if ($post.thumbnail) { $post.thumbnail } else { '' }
+        $description = if ($post.description -and $post.description.Trim() -ne '') { $post.description } else { $title }
+        $embedUrl = if ($post.embed_url) { $post.embed_url } else { "https://server.apijav.com/embed/$id" }
 
         $changefreq = 'monthly'
         $priority = '0.50'
@@ -622,10 +626,14 @@ for ($page = 1; $page -le $totalPages; $page++) {
 
         $postData += @{
             id             = $id
+            title          = $title
             dateVal        = $dateVal
             changefreq     = $changefreq
             priority       = $priority
             localizedSlugs = $localizedSlugs
+            thumbnail      = $thumbnail
+            description    = $description
+            embedUrl       = $embedUrl
         }
     }
 
@@ -647,6 +655,20 @@ for ($page = 1; $page -le $totalPages; $page++) {
             [void]$sb.AppendLine("    <lastmod>$($pd.dateVal)</lastmod>")
             [void]$sb.AppendLine("    <changefreq>$($pd.changefreq)</changefreq>")
             [void]$sb.AppendLine("    <priority>$($pd.priority)</priority>")
+            
+            if ($pd.thumbnail) {
+                [void]$sb.AppendLine("    <image:image>")
+                [void]$sb.AppendLine("      <image:loc>$(EscXml $pd.thumbnail)</image:loc>")
+                [void]$sb.AppendLine("      <image:title>$(EscXml $pd.title)</image:title>")
+                [void]$sb.AppendLine("    </image:image>")
+                
+                [void]$sb.AppendLine("    <video:video>")
+                [void]$sb.AppendLine("      <video:thumbnail_loc>$(EscXml $pd.thumbnail)</video:thumbnail_loc>")
+                [void]$sb.AppendLine("      <video:title>$(EscXml $pd.title)</video:title>")
+                [void]$sb.AppendLine("      <video:description>$(EscXml $pd.description)</video:description>")
+                [void]$sb.AppendLine("      <video:player_loc>$(EscXml $pd.embedUrl)</video:player_loc>")
+                [void]$sb.AppendLine("    </video:video>")
+            }
 
             # Alternate links untuk semua bahasa (dengan slug terlokalisasi unik masing-masing bahasa)
             foreach ($altLang in $LANGS) {

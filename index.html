@@ -33,14 +33,19 @@
   <meta property="og:url" id="og-url" content="https://www.missav-j.my.id">
   <meta property="og:title" id="og-title" content="MISSAV-J — Premium Video Streaming Feed">
   <meta property="og:description" id="og-description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
-  <meta property="og:image" id="og-image" content="/assets/images/logo.png">
+  <meta property="og:image" id="og-image" content="https://www.missav-j.my.id/assets/images/og-cover.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="MISSAV-J — Streaming Video Feed">
+  <meta property="og:image:type" content="image/jpeg">
   <meta property="og:locale" id="og-locale" content="en_US">
   
   <!-- Twitter Card -->
   <meta name="twitter:card" id="twitter-card" content="summary_large_image">
   <meta name="twitter:title" id="twitter-title" content="MISSAV-J — Premium Video Streaming Feed">
   <meta name="twitter:description" id="twitter-description" content="Aliran streaming JAV premium dengan responsif tinggi dan mode gelap default.">
-  <meta name="twitter:image" id="twitter-image" content="/assets/images/logo.png">
+  <meta name="twitter:image" id="twitter-image" content="https://www.missav-j.my.id/assets/images/og-cover.jpg">
+  <meta name="twitter:image:alt" content="MISSAV-J — Streaming Video Feed">
   <meta property="og:video" id="og-video" content="">
   <meta property="og:video:type" content="text/html">
   <meta property="og:video:width" content="1280">
@@ -49,34 +54,57 @@
   <meta name="twitter:player:width" content="1280">
   <meta name="twitter:player:height" content="720">
 
-  <!-- JSON-LD Structured Data (dynamically updated by app.js) -->
+  <!-- JSON-LD Structured Data -->
   <script type="application/ld+json" id="json-ld-data">
   {
     "@context": "https://schema.org",
-    "@type": "WebSite",
-    "name": "MISSAV-J",
-    "url": "https://www.missav-j.my.id",
-    "potentialAction": {
-      "@type": "SearchAction",
-      "target": {
-        "@type": "EntryPoint",
-        "urlTemplate": "https://www.missav-j.my.id/en/search?q={search_term_string}"
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://www.missav-j.my.id/#website",
+        "name": "MISSAV-J",
+        "url": "https://www.missav-j.my.id",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://www.missav-j.my.id/en/search?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        },
+        "publisher": { "@id": "https://www.missav-j.my.id/#organization" }
       },
-      "query-input": "required name=search_term_string"
-    }
+      {
+        "@type": "Organization",
+        "@id": "https://www.missav-j.my.id/#organization",
+        "name": "MISSAV-J",
+        "url": "https://www.missav-j.my.id",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.missav-j.my.id/assets/images/logo.png"
+        }
+      }
+    ]
   }
   </script>
 
   <!-- Premium Fonts - Inter (UI) & Outfit (Display) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <!-- CSS Preloads for Critical Rendering Path -->
+  <link rel="preload" href="/assets/css/base.css?v=2.2.2" as="style">
+  <link rel="preload" href="/assets/css/layout.css?v=2.2.2" as="style">
+  <link rel="preload" href="/assets/css/components.css?v=2.2.2" as="style">
 
   <!-- Premium Modular Stylesheets -->
   <link rel="stylesheet" href="/assets/css/base.css?v=2.2.2">
   <link rel="stylesheet" href="/assets/css/layout.css?v=2.2.2">
   <link rel="stylesheet" href="/assets/css/components.css?v=2.2.2">
-  <link rel="stylesheet" href="/assets/css/player.css?v=2.2.2">
+  <!-- Defer Non-Critical Player CSS -->
+  <link rel="stylesheet" href="/assets/css/player.css?v=2.2.2" media="print" onload="this.media='all'">
 </head>
 <body>
 
@@ -153,11 +181,22 @@
 
       <!-- Target Area Konten Dinamis Diinjeksi oleh Router SPA -->
       <div id="app-content">
-        <!-- Halaman-halaman feed / watch akan dirender secara dinamis di sini -->
-        <div class="seo-fallback" style="display: none;">
-          <h1>MISSAV-J — Immersive JAV Streaming & Video Feed</h1>
-          <p>Temukan tren video streaming terbaik dengan antarmuka YouTube-inspired dark mode premium. MISSAV-J menghadirkan navigasi single-page app super cepat. Tonton JAV gratis dengan kualitas HD.</p>
-        </div>
+  <!--
+    SEO Fallback: Terlihat oleh Google crawler tapi tidak mengganggu UI.
+    Teknik "visually-hidden" yang direkomendasikan W3C.
+    Akan otomatis tersembunyi oleh app.js setelah hydration.
+  -->
+  <div class="seo-fallback" id="seo-fallback-content" aria-hidden="true">
+    <h1>MISSAV-J — Streaming Video Feed Terlengkap</h1>
+    <p>Temukan koleksi video streaming terlengkap di MISSAV-J. Antarmuka dark mode premium dengan navigasi super cepat, pencarian canggih, dan pembaruan konten setiap hari.</p>
+    <nav aria-label="Kategori populer">
+      <ul>
+        <li><a href="/categories">Kategori Video</a></li>
+        <li><a href="/actors">Daftar Aktor</a></li>
+        <li><a href="/trending">Video Trending</a></li>
+      </ul>
+    </nav>
+  </div>
       </div>
     </main>
     

@@ -9,6 +9,7 @@ import api from './api.js?v=2.2.2';
 import ui from './ui.js?v=2.2.2';
 import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.2.2';
 import i18n from './i18n.js?v=2.2.2';
+import { SessionHistory } from './history.js?v=2.2.2';
 import ReferralSystem from './referral.js?v=2.2.2';
 import { Analytics } from './analytics.js?v=2.2.2';
 
@@ -103,6 +104,11 @@ export async function init(id) {
               <span id="player-views-count">0 ${i18n.t('views')}</span>
               <span class="card-dot">•</span>
               <span id="player-publish-date">${i18n.t('published')}</span>
+              <span class="card-dot">•</span>
+              <span class="social-proof-meta" id="player-live-viewers">
+                <span class="live-pulse-dot"></span>
+                <span id="live-viewers-count">0 watching</span>
+              </span>
             </div>
             
             <div class="player-buttons">
@@ -162,10 +168,13 @@ export async function init(id) {
       
       <!-- Kolom Kanan: Rekomendasi Video Terkait & Iklan Sidebar -->
       <div class="player-sidebar-column">
-        <!-- Banner Iklan Sidebar (Mendukung 300x250) -->
-        <div class="ad-placement sidebar-ad" id="sidebar-ad"></div>
-
-        <h3>${i18n.t('related_videos')}</h3>
+        <div class="related-header-controls">
+          <h3>Community also watched</h3>
+          <div class="autoplay-toggle-wrapper active" id="autoplay-toggle" title="Auto-Play next video">
+            <span class="autoplay-label">Auto-Play</span>
+            <div class="autoplay-switch"></div>
+          </div>
+        </div>
         <div class="related-videos-list" id="related-videos-list">
           <!-- Diisi video rekomendasi -->
         </div>
@@ -188,6 +197,16 @@ export async function init(id) {
       floatWrapper.classList.add('mode-theater');
       alignGlobalPlayerWithPlaceholder();
       setupPlaceholderObserver();
+    }
+
+    // Clear Up Next engine from previous navigation
+    if (typeof upNextTimeoutId !== 'undefined' && upNextTimeoutId) {
+      clearTimeout(upNextTimeoutId);
+      upNextTimeoutId = null;
+    }
+    if (typeof upNextCountdownId !== 'undefined' && upNextCountdownId) {
+      clearInterval(upNextCountdownId);
+      upNextCountdownId = null;
     }
 
     if (isCurrentlyPlaying) {
@@ -316,6 +335,9 @@ export async function init(id) {
     // 4. Catat Riwayat Tontonan Sesi (In-memory, hindari duplikasi rujukan)
     trackWatchHistory(post);
 
+    // LOG WATCH HISTORY: Add to local session memory
+    SessionHistory.addWatch(post);
+    
     // 5. Muat Iklan Adsterra & Popunder Overlay
     if (window.missavJAds && typeof window.missavJAds.loadWatchPageAds === 'function') {
       window.missavJAds.loadWatchPageAds();
@@ -345,8 +367,32 @@ function trackWatchHistory(post) {
  * Merender metadata lengkap video ke elemen DOM (Tersanitasi Penuh)
  */
 export function renderPostMeta(post, id) {
-  const titleEl = document.getElementById('player-title');
-  const viewsEl = document.getElementById('player-views-count');
+  document.getElementById('player-title').textContent = post.title || 'Video Stream';
+    
+    // Convert views using ui.formatNumber
+    const viewsNum = parseInt(post.views, 10) || 0;
+    document.getElementById('player-views-count').textContent = `${ui.formatNumber(viewsNum)} ${i18n.t('views')}`;
+    
+    // [SOCIAL SIGNALS] Heuristic calculation of live viewers based on views
+    const timeSeed = new Date().getHours();
+    const liveRatio = 0.005 + (Math.abs(Math.sin(parseInt(id, 10) + timeSeed)) * 0.015);
+    let liveViewers = Math.floor(viewsNum * liveRatio);
+    if (viewsNum > 10000 && liveViewers < 12) liveViewers = 12 + (parseInt(id, 10) % 30);
+    if (viewsNum > 50000 && liveViewers < 45) liveViewers = 45 + (parseInt(id, 10) % 80);
+    if (liveViewers > 4500) liveViewers = 4500 + (parseInt(id, 10) % 500);
+
+    const liveViewersEl = document.getElementById('live-viewers-count');
+    const pulseDot = document.querySelector('.social-proof-meta .live-pulse-dot');
+    if (liveViewersEl) {
+      if (liveViewers > 10) {
+        liveViewersEl.textContent = `${liveViewers.toLocaleString()} watching now`;
+        document.getElementById('player-live-viewers').style.display = 'inline-flex';
+        if (pulseDot) pulseDot.className = `live-pulse-dot ${liveViewers > 500 ? 'hot' : ''}`;
+      } else {
+        document.getElementById('player-live-viewers').style.display = 'none';
+      }
+    }
+    
   const dateEl = document.getElementById('player-publish-date');
   const studioWrapper = document.getElementById('player-studio-wrapper');
   const codeEl = document.getElementById('player-code');
@@ -364,15 +410,6 @@ export function renderPostMeta(post, id) {
 
   // Sanitasi & render Title & views
   const translatedTitle = i18n.translateVideoTitle(post.title);
-  if (titleEl) {
-    titleEl.textContent = translatedTitle;
-    titleEl.setAttribute('data-original-title', post.title || '');
-  }
-  
-  if (viewsEl) {
-    const viewsCount = post.views ? parseInt(post.views, 10) : 0;
-    viewsEl.textContent = `${viewsCount.toLocaleString(i18n.getLang())} ${i18n.t('views')}`;
-  }
   
   if (dateEl && post.date) {
     const pubDate = new Date(post.date);
@@ -445,7 +482,7 @@ export function renderPostMeta(post, id) {
   renderChips(tagsList, post.tags, 'tag');
 
   // Likes & Dislikes
-  setupLikesAndDislikes(post, id);
+  setupLikesAndDislikes(post, id, liveViewers);
 
   // Setup Share Button
   const shareBtn = document.getElementById('share-btn');
@@ -465,14 +502,36 @@ export function renderPostMeta(post, id) {
 /**
  * Setup data Likes/Dislikes & state in-memory
  */
-function setupLikesAndDislikes(post, id) {
+function setupLikesAndDislikes(post, id, liveViewers = 0) {
   const likeBtn = document.getElementById('like-btn');
   const dislikeBtn = document.getElementById('dislike-btn');
   const likeCountEl = document.getElementById('like-count');
   const dislikeCountEl = document.getElementById('dislike-count');
 
-  let likes = parseInt(post.likes || 0, 10);
-  let dislikes = parseInt(post.dislikes || 0, 10);
+  // Calculate realistic likes/dislikes heuristics based on views
+  const viewsNum = parseInt(post.views, 10) || 0;
+  let likes = Math.floor(viewsNum * 0.024);
+  let dislikes = Math.floor(viewsNum * 0.002);
+  
+  if (likes < 1) likes = 1;
+  if (dislikes < 0) dislikes = 0;
+
+  // [SOCIAL SIGNALS] Dynamic Activity Pulse (simulates concurrent users engaging)
+  // Slowly increment likes realistically while the user is watching
+  if (window._socialPulseInterval) clearInterval(window._socialPulseInterval);
+  if (liveViewers > 20) {
+    window._socialPulseInterval = setInterval(() => {
+      // Random chance to increment like based on active viewers density
+      if (Math.random() < (liveViewers / 10000)) {
+        likes++;
+        if (likeCountEl) {
+          likeCountEl.textContent = ui.formatNumber(likes);
+          likeCountEl.parentElement.style.transform = 'scale(1.1)';
+          setTimeout(() => likeCountEl.parentElement.style.transform = 'scale(1)', 200);
+        }
+      }
+    }, 3500); // Check every 3.5 seconds
+  }
 
   const isLiked = likedVideos.has(id);
   const isDisliked = dislikedVideos.has(id);
@@ -486,8 +545,8 @@ function setupLikesAndDislikes(post, id) {
     dislikes += 1;
   }
 
-  if (likeCountEl) likeCountEl.textContent = likes.toLocaleString('id-ID');
-  if (dislikeCountEl) dislikeCountEl.textContent = dislikes.toLocaleString('id-ID');
+  if (likeCountEl) likeCountEl.textContent = ui.formatNumber(likes);
+  if (dislikeCountEl) dislikeCountEl.textContent = ui.formatNumber(dislikes);
 
   likeBtn.addEventListener('click', () => {
     if (likedVideos.has(id)) {
@@ -505,8 +564,8 @@ function setupLikesAndDislikes(post, id) {
         dislikes -= 1;
       }
     }
-    likeCountEl.textContent = likes.toLocaleString('id-ID');
-    dislikeCountEl.textContent = dislikes.toLocaleString('id-ID');
+    if (likeCountEl) likeCountEl.textContent = ui.formatNumber(likes);
+    if (dislikeCountEl) dislikeCountEl.textContent = ui.formatNumber(dislikes);
   });
 
   dislikeBtn.addEventListener('click', () => {
@@ -525,8 +584,8 @@ function setupLikesAndDislikes(post, id) {
         likes -= 1;
       }
     }
-    likeCountEl.textContent = likes.toLocaleString('id-ID');
-    dislikeCountEl.textContent = dislikes.toLocaleString('id-ID');
+    if (likeCountEl) likeCountEl.textContent = ui.formatNumber(likes);
+    if (dislikeCountEl) dislikeCountEl.textContent = ui.formatNumber(dislikes);
   });
 }
 
@@ -634,6 +693,31 @@ function computeRelevanceScore(candidate, currentPost) {
     else if (views > 1000) score += 1;
   }
 
+  // PERSONALIZATION BONUS: 
+  // Read from local memory and lightly boost videos that match user's long-term habits
+  const prefs = SessionHistory.getTopPreferences();
+  
+  // Boost matching tags (max 5 points so it doesn't overpower strict relevance)
+  let prefBonus = 0;
+  candidateTags.forEach(t => {
+    if (prefs.tags[t]) prefBonus += Math.min(prefs.tags[t], 5);
+  });
+  candidateActors.forEach(a => {
+    if (prefs.actors[a]) prefBonus += Math.min(prefs.actors[a], 10);
+  });
+  
+  // Cap personalization bonus to 15 to ensure it doesn't break primary algorithm
+  score += Math.min(prefBonus, 15);
+
+  // DIVERSITY INJECTOR: Give a random boost to Tag/Category matches to prevent Actor-monopoly loops
+  if (matchReason === 'tag' || matchReason === 'category') {
+    // 30% chance to boost a discovery video's score artificially high (e.g. 90) so it mixes into Top 3
+    if (Math.random() > 0.7) {
+      score += 85; 
+      matchReason = 'discovery'; // Visual badge differentiation
+    }
+  }
+
   return { score, matchReason };
 }
 
@@ -649,28 +733,34 @@ export async function loadRelatedVideos(post) {
     const promises = [];
     const queryLabels = []; // Label debug untuk setiap query
 
-    // OPTIMIZATION: Reduce 4 parallel requests to 1-2 prioritized requests to save Cloudflare usage.
-    // Prioritize Actor > Series > Tag > Category
+    // OPTIMIZATION: Dual-Query Discovery Engine
+    // Query 1: Strict Relevance (Actor or Series)
+    // Query 2: Lateral Discovery (Tag, Category, or Keywords)
+    // This breaks the "Dead-End Navigation Loop" by mixing highly relevant content with lateral exploration content.
 
+    let hasPrimary = false;
+
+    // --- Query 1: Strict Relevance (Limit 8) ---
     if (post.actors && post.actors.length > 0) {
-      // If actor exists, just fetch actor's videos (most relevant)
-      promises.push(api.getPosts({ actor: post.actors[0], per_page: 12 }));
+      promises.push(api.getPosts({ actor: post.actors[0], per_page: 8 }));
       queryLabels.push('actor:' + post.actors[0]);
+      hasPrimary = true;
     } else if (post.code && post.code.trim() && extractCodeSeriesPrefix(post.code)) {
-      // Fallback to series
       const seriesPrefix = extractCodeSeriesPrefix(post.code);
-      promises.push(api.getPosts({ search: seriesPrefix, per_page: 12 }));
+      promises.push(api.getPosts({ search: seriesPrefix, per_page: 8 }));
       queryLabels.push('series:' + seriesPrefix);
-    } else if (post.tags && post.tags.length > 0) {
-      // Fallback to tag
-      promises.push(api.getPosts({ tag: post.tags[0], per_page: 12 }));
+      hasPrimary = true;
+    }
+
+    // --- Query 2: Lateral Discovery (Limit 8) ---
+    if (post.tags && post.tags.length > 0) {
+      promises.push(api.getPosts({ tag: post.tags[0], per_page: 8 }));
       queryLabels.push('tag:' + post.tags[0]);
     } else if (post.categories && post.categories.length > 0) {
-      // Fallback to category
-      promises.push(api.getPosts({ category: post.categories[0], per_page: 12 }));
+      promises.push(api.getPosts({ category: post.categories[0], per_page: 8 }));
       queryLabels.push('category:' + post.categories[0]);
-    } else {
-      // Absolute fallback
+    } else if (!hasPrimary) {
+      // Absolute fallback if neither Actor/Series nor Tag/Category existed
       const keywords = extractTitleKeywords(post.title);
       if (keywords) {
         promises.push(api.getPosts({ search: keywords, per_page: 12 }));
@@ -770,6 +860,11 @@ export async function loadRelatedVideos(post) {
     
     bindRelatedClicks(relatedList);
 
+    // [ENGAGEMENT OPTIMIZATION] Initialize the Up Next Engine with the top recommendation
+    if (finalPosts.length > 0) {
+      initUpNextEngine(post, finalPosts[0]);
+    }
+
   } catch (error) {
     console.error('Fetch Related Videos Error:', error);
     relatedList.innerHTML = `<span class="text-faint text-center py-4">${i18n.t('error_load_related')}</span>`;
@@ -826,10 +921,11 @@ function renderRelatedRowCard(post, index) {
   let matchBadgeHTML = '';
   if (post._matchReason) {
     const badgeConfig = {
-      actor:    { icon: '🎭', key: 'match_same_actor',    cls: 'match-actor' },
-      series:   { icon: '📀', key: 'match_same_series',   cls: 'match-series' },
-      tag:      { icon: '🏷️', key: 'match_similar_tag',   cls: 'match-tag' },
-      category: { icon: '📂', key: 'match_same_category', cls: 'match-category' },
+      actor:     { icon: '🎭', key: 'match_same_actor',    cls: 'match-actor' },
+      series:    { icon: '📀', key: 'match_same_series',   cls: 'match-series' },
+      tag:       { icon: '🏷️', key: 'match_similar_tag',   cls: 'match-tag' },
+      category:  { icon: '📂', key: 'match_same_category', cls: 'match-category' },
+      discovery: { icon: '✨', key: 'match_discovery',     cls: 'match-discovery' }
     };
     const cfg = badgeConfig[post._matchReason];
     if (cfg) {
@@ -837,17 +933,24 @@ function renderRelatedRowCard(post, index) {
     }
   }
 
-  const animationStyle = `style="animation-delay: calc(${index} * 40ms);"`;
+  // Staggered animation delay
+  const animationStyle = `style="animation-delay: ${index * 0.05}s"`;
+  const isUpNext = index === 0;
+  const upNextClass = isUpNext ? ' up-next-highlight' : '';
+  const upNextBadge = isUpNext ? `<span class="up-next-badge">${i18n.t('up_next') || 'Up Next'}</span>` : '';
 
   return `
-    <div class="related-video-card fadeInUp" data-id="${safeId}" data-code="${ui.escapeHTML(post.code || '')}" data-title="${safeTitle}" ${animationStyle}>
+    <div class="related-video-card fadeInUp${upNextClass}" data-id="${safeId}" data-code="${ui.escapeHTML(post.code || '')}" data-title="${safeTitle}" ${animationStyle}>
       <div class="related-thumb">
+        ${upNextBadge}
         <img 
           src="${safeThumbnail || SVG_FALLBACK_THUMB}" 
           alt="${safeTitle}" 
+          width="320"
+          height="180"
+          style="aspect-ratio: 16/9; background: #000;"
           loading="lazy"
           decoding="async"
-          onload="this.classList.add('loaded')"
           onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
         >
         ${uncensoredBadge}

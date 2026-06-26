@@ -64,6 +64,8 @@
   /* Cinematic Motion */
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-tactile: cubic-bezier(0.25, 1, 0.5, 1); /* Physical button squish */
+  --ease-fluid: cubic-bezier(0.4, 0, 0.2, 1);    /* Silky crossfades */
   --transition: 400ms var(--ease-out-expo);
   --transition-fast: 200ms var(--ease-out-expo);
   
@@ -170,6 +172,15 @@ button, input, select, textarea {
   border: none;
 }
 
+a, button {
+  touch-action: manipulation; /* Prevents double-tap zoom delay on mobile */
+}
+
+a:active, button:active, .card-base:active {
+  transform: scale(0.97);
+  transition: transform 150ms var(--ease-tactile);
+}
+
 button {
   cursor: pointer;
 }
@@ -178,7 +189,7 @@ input:focus, select:focus, textarea:focus {
   outline: none;
 }
 
-img {
+img, video {
   max-width: 100%;
   height: auto;
   display: block;
@@ -208,4 +219,26 @@ img {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* 
+ * SEO Fallback — visually hidden tapi terbaca crawler & screen reader.
+ * app.js akan menambahkan class 'app-ready' ke <body> setelah hydration,
+ * yang akan menyembunyikan elemen ini sepenuhnya.
+ */
+.seo-fallback {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  pointer-events: none;
+}
+
+body.app-ready .seo-fallback {
+  display: none;
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'missavj-cache-v2.2.2';
+const CACHE_NAME = 'missavj-cache-v2.2.3';
 const API_CACHE_NAME = 'missavj-api-cache';
 const MAX_API_CACHE_ITEMS = 50;
 const ASSETS_TO_CACHE = [
@@ -87,7 +87,19 @@ self.addEventListener('fetch', (event) => {
         }).catch((err) => {
           console.warn('Network fetch failed for API, relying on cache', err);
           // Return the cached response if available, else throw
-          if (cachedResponse) return cachedResponse;
+          if (cachedResponse) {
+             const fallbackHeaders = new Headers(cachedResponse.headers);
+             fallbackHeaders.append('X-Offline-Fallback', 'true');
+             // We cannot directly read cachedResponse.body as it might be consumed?
+             // Actually, we must clone it or just reconstruct it. But creating a new response with the blob is safer.
+             return cachedResponse.blob().then(blob => {
+                 return new Response(blob, {
+                     status: cachedResponse.status,
+                     statusText: cachedResponse.statusText,
+                     headers: fallbackHeaders
+                 });
+             });
+          }
           throw err;
         });
         

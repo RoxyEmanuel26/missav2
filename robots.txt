@@ -1,14 +1,25 @@
-# === MISSAV-J Robots.txt ===
+# ============================================
+# MISSAV-J — robots.txt
+# Last updated: 2025
+# ============================================
 
-# Default crawler rules
+# Default: izinkan semua crawler, blokir folder internal
 User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /functions/
+Disallow: /.wrangler/
+Crawl-delay: 1
 
-# AI Search Bots — allow citation & indexing
+# ============================================
+# AI SEARCH & CITATION BOTS — diizinkan penuh
+# ============================================
 User-agent: GPTBot
 Allow: /
+Disallow: /api/
+Disallow: /assets/js/
+Disallow: /assets/css/
+Disallow: /functions/
 
 User-agent: ChatGPT-User
 Allow: /
@@ -25,14 +36,23 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
-# Training-only crawlers — block
+User-agent: Applebot-Extended
+Allow: /
+
+# ============================================
+# AI TRAINING ONLY — diblokir
+# ============================================
 User-agent: CCBot
 Disallow: /
 
-User-agent: GPTBot
-Disallow: /api/
-Disallow: /assets/js/
-Disallow: /assets/css/
+User-agent: Omgilibot
+Disallow: /
 
+User-agent: FacebookBot
+Disallow: /
+
+# ============================================
 # Sitemaps
+# ============================================
 Sitemap: https://www.missav-j.my.id/sitemaps/sitemap_index.xml
+Sitemap: https://www.missav-j.my.id/sitemaps/sitemap_videos.xml

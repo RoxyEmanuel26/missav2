@@ -158,6 +158,24 @@
   margin: 0 auto;
 }
 
+/* Route Transitions (Visual Continuity) */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms var(--ease-fluid), transform 400ms var(--ease-fluid);
+}
+
+.page-exit {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 200ms var(--ease-fluid), transform 200ms var(--ease-fluid);
+}
+
 /* 4. Editorial Layout Grids */
 
 /* The Bento/Mixed Density Grid */
