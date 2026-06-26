@@ -4,15 +4,15 @@
  * desktop global hotkeys, and playlist in-memory states (Watch Later & Session History).
  */
 
-import ui from './ui.js?v=2.2.2';
-import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.2.2';
-import i18n from './i18n.js?v=2.2.2';
-import { Analytics } from './analytics.js?v=2.2.2';
-import ReferralSystem from './referral.js?v=2.2.2';
-import { Telemetry } from './telemetry.js?v=2.2.2';
-import Prefetcher from './prefetch.js?v=2.2.2';
-import { SeoDiagnostics } from './seo-diagnostics.js?v=2.2.2';
-import './ads.js?v=2.2.2';
+import ui from './ui.js?v=2.3.2';
+import { renderVideoCard, bindHoverPreviews } from './feed.js?v=2.3.2';
+import i18n from './i18n.js?v=2.3.2';
+import { Analytics } from './analytics.js?v=2.3.2';
+import ReferralSystem from './referral.js?v=2.3.2';
+import { Telemetry } from './telemetry.js?v=2.3.2';
+import Prefetcher from './prefetch.js?v=2.3.2';
+import { SeoDiagnostics } from './seo-diagnostics.js?v=2.3.2';
+import './ads.js?v=2.3.2';
 
 // Initialize Telemetry & Diagnostics
 Telemetry.init();
@@ -145,15 +145,36 @@ function parseUrl(urlPath) {
  * @param {string} routePath - The internal route destination (e.g. '/watch?id=123' or '/trending')
  */
 window.missavJNavigate = function(routePath) {
-  const currentLang = i18n.getLang();
   const cleanPath = routePath.startsWith('/') ? routePath : '/' + routePath;
   
   // Safely split pathnames and search query segments
   const [pathPart, queryPart] = cleanPath.split('?');
-  const fullPath = `/${currentLang}${pathPart}` + (queryPart ? `?${queryPart}` : '');
   
-  history.pushState(null, '', fullPath);
-  navigate(fullPath);
+  // Remove any existing language prefix from pathPart to avoid double prefixes (e.g. /id/id/watch/...)
+  let strippedPath = pathPart;
+  const pathSegments = pathPart.replace(/^\//, '').split('/');
+  const potentialLang = pathSegments[0];
+  const isValidLang = i18n.LANGS.some(l => l.code === potentialLang);
+  
+  let targetLang = i18n.getLang();
+  if (isValidLang) {
+    targetLang = potentialLang;
+    strippedPath = '/' + pathSegments.slice(1).join('/');
+  }
+  
+  // Ensure strippedPath is at least '/'
+  if (strippedPath === '' || strippedPath === '/') strippedPath = '';
+  
+  // Reconstruct full path with single language prefix
+  // Since strippedPath might be empty (for root), we check if it already has a leading slash
+  const finalPathPart = strippedPath.startsWith('/') ? strippedPath : '/' + strippedPath;
+  const fullPath = `/${targetLang}${finalPathPart}` + (queryPart ? `?${queryPart}` : '');
+  
+  // Fix double slashes if any (e.g. /id//)
+  const cleanedFullPath = fullPath.replace(/\/\//g, '/');
+  
+  history.pushState(null, '', cleanedFullPath);
+  navigate(cleanedFullPath);
 };
 
 // Custom playlist grid renderer for Watch Later & Session History
@@ -199,21 +220,21 @@ function renderSavedVideosPage(title, postsList, emptyMessage) {
 
 // In-Memory routing map for SPA page handlers
 const routes = {
-  '/':          (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({}, signal)),
-  '/trending':  (arg, signal) => import('./trending.js?v=2.2.2').then(m => m.init(signal)),
-  '/recent':    (arg, signal) => import('./recent.js?v=2.2.2').then(m => m.init(signal)),
-  '/search':    (q, signal) => import('./search.js?v=2.2.2').then(m => m.init(q || getParam('q'), signal)),
-  '/watch':     (id, signal) => import('./player.js?v=2.2.2').then(m => m.init(id || window.missavJGetCurrentWatchId(), signal)),
-  '/category':  (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({ category: getParam('name') }, signal)),
-  '/actor':     (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({ actor: getParam('name') }, signal)),
-  '/studio':    (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({ studio: getParam('name') }, signal)),
-  '/tag':       (arg, signal) => import('./feed.js?v=2.2.2').then(m => m.init({ tag: getParam('name') }, signal)),
+  '/':          (arg, signal) => import('./feed.js?v=2.3.2').then(m => m.init({}, signal)),
+  '/trending':  (arg, signal) => import('./trending.js?v=2.3.2').then(m => m.init(signal)),
+  '/recent':    (arg, signal) => import('./recent.js?v=2.3.2').then(m => m.init(signal)),
+  '/search':    (q, signal) => import('./search.js?v=2.3.2').then(m => m.init(q || getParam('q'), signal)),
+  '/watch':     (id, signal) => import('./player.js?v=2.3.2').then(m => m.init(id || window.missavJGetCurrentWatchId(), signal)),
+  '/category':  (arg, signal) => import('./feed.js?v=2.3.2').then(m => m.init({ category: getParam('name') }, signal)),
+  '/actor':     (arg, signal) => import('./feed.js?v=2.3.2').then(m => m.init({ actor: getParam('name') }, signal)),
+  '/studio':    (arg, signal) => import('./feed.js?v=2.3.2').then(m => m.init({ studio: getParam('name') }, signal)),
+  '/tag':       (arg, signal) => import('./feed.js?v=2.3.2').then(m => m.init({ tag: getParam('name') }, signal)),
   
   // Taxonomy browsing routes for Actors, Studios & Categories
-  '/actors':          () => import('./actors.js?v=2.2.2').then(m => m.init()),
-  '/popular-actors':  () => import('./popular_actors.js?v=2.2.2').then(m => m.init()),
-  '/studios':         () => import('./studios.js?v=2.2.2').then(m => m.init()),
-  '/categories':      () => import('./categories.js?v=2.2.2').then(m => m.init()),
+  '/actors':          () => import('./actors.js?v=2.3.2').then(m => m.init()),
+  '/popular-actors':  () => import('./popular_actors.js?v=2.3.2').then(m => m.init()),
+  '/studios':         () => import('./studios.js?v=2.3.2').then(m => m.init()),
+  '/categories':      () => import('./categories.js?v=2.3.2').then(m => m.init()),
   
   // Playlists routing mapping
   '/history':     () => Promise.resolve(renderSavedVideosPage(i18n.t('nav_history'), window.missavJState.history, i18n.t('history_empty_desc')))
@@ -566,7 +587,7 @@ function navigate(urlPath) {
     if (relatedHeading) relatedHeading.textContent = i18n.t('related_videos');
     
     // Re-render metadata chips (actors, categories, tags) with new language
-    import('./player.js?v=2.2.2').then(m => {
+    import('./player.js?v=2.3.2').then(m => {
       if (m.renderPostMeta) m.renderPostMeta(post, targetId);
       if (m.loadRelatedVideos) m.loadRelatedVideos(post);
     }).catch(() => { /* silent — non-critical */ });
@@ -577,7 +598,7 @@ function navigate(urlPath) {
   // 1. LEAVE WATCH: Close/dispose the player immediately since floating/PiP mode is disabled
   if (prevPath === '/watch' && matchedRoutePath !== '/watch') {
     // Matikan observer karena kita keluar dari halaman watch
-    import('./player.js?v=2.2.2').then(m => {
+    import('./player.js?v=2.3.2').then(m => {
       if (m.disconnectPlaceholderObserver) {
         m.disconnectPlaceholderObserver();
       }
@@ -626,7 +647,7 @@ function navigate(urlPath) {
   
     // Session Persistence: save last valid route to sessionStorage
     if (matchedRoutePath !== '/' || window.location.search !== '') {
-      sessionStorage.setItem('missavj_last_route', matchedRoutePath + window.location.search);
+      sessionStorage.setItem('missavj_last_route', window.location.pathname + window.location.search);
     }
     
     // Scroll instantly to page top bounds
@@ -707,7 +728,7 @@ export function closeFloatingPlayer() {
   window.missavJState.isFloating = false;
 
   // Bersihkan observer dari player.js jika ada
-  import('./player.js?v=2.2.2').then(m => {
+  import('./player.js?v=2.3.2').then(m => {
     if (m.disconnectPlaceholderObserver) {
       m.disconnectPlaceholderObserver();
     }
@@ -906,7 +927,7 @@ function setupFloatingPlayerDOM() {
   window.addEventListener('resize', () => {
     const wrapper = document.getElementById('floating-player-wrapper');
     if (wrapper && wrapper.classList.contains('mode-theater') && !wrapper.classList.contains('hidden')) {
-      import('./player.js?v=2.2.2').then(m => {
+      import('./player.js?v=2.3.2').then(m => {
         if (m.alignGlobalPlayerWithPlaceholder) {
           m.alignGlobalPlayerWithPlaceholder();
         }
@@ -1805,28 +1826,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const isNoSearch = window.location.search === '' || window.location.search === '?source=pwa';
   
   if (isDirectRoot && isNoSearch && lastRoute && lastRoute !== '/') {
-    // Render the root feed first, then show a resume toast
+    // Render the root feed first, without showing the annoying toast
     navigate(window.location.pathname + window.location.search);
-    setTimeout(() => {
-       const container = document.getElementById('toast-container');
-       if (container) {
-          const toast = document.createElement('div');
-          toast.className = 'toast show';
-          toast.style.cursor = 'pointer';
-          toast.style.background = 'var(--color-accent)';
-          toast.style.color = '#000';
-          toast.innerHTML = `<strong>Resume Session?</strong> Click to return to your last page.`;
-          toast.onclick = () => {
-             toast.classList.remove('show');
-             window.missavJNavigate(lastRoute);
-          };
-          container.appendChild(toast);
-          setTimeout(() => {
-             toast.classList.remove('show');
-             setTimeout(() => toast.remove(), 300);
-          }, 8000);
-       }
-    }, 1500);
   } else {
     // Normal load
     navigate(window.location.pathname + window.location.search);

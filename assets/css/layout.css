@@ -182,6 +182,7 @@
 .editorial-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-auto-flow: dense;
   gap: var(--space-6);
   width: 100%;
 }
@@ -190,6 +191,7 @@
 .standard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-auto-flow: dense;
   gap: var(--space-6);
   width: 100%;
 }

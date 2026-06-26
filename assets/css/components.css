@@ -44,7 +44,13 @@
   height: 100%;
   object-fit: cover;
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s ease;
-  /* Removed will-change to prevent severe GPU memory bleed on mobile */
+  animation: imgFadeIn 0.5s ease-out forwards;
+  background-color: var(--color-surface); /* Acts as a skeleton while loading */
+}
+
+@keyframes imgFadeIn {
+  from { opacity: 0; filter: blur(4px); }
+  to { opacity: 1; filter: blur(0); }
 }
 
 .card-base:hover .card-thumb img {
@@ -91,73 +97,86 @@
 
 /* ----------------------------------
    VARIANT A: Cinematic Card (Hero)
-   - Large image, metadata overlays on image
+   - Mobile: Looks exactly like an Editorial Card
+   - Desktop: Large image, metadata overlays on image
    ---------------------------------- */
-.card-cinematic {
-  grid-column: 1 / -1;
-  aspect-ratio: 16/9; /* Fixes image being cut off on mobile */
-  height: auto;
-  min-height: auto;
-  border-radius: var(--radius-lg);
+.card-cinematic .card-thumb {
+  aspect-ratio: 16/9;
+}
+
+.card-cinematic .card-info-overlay {
+  padding: var(--space-3) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.card-cinematic .card-title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  order: -1; /* Move title to the top on mobile */
+}
+
+.card-cinematic:hover .card-title {
+  color: var(--color-accent);
+}
+
+.card-cinematic .card-meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-2);
+  row-gap: var(--space-1);
+  align-items: center;
 }
 
 @media(min-width: 768px) {
   .card-cinematic {
     grid-column: 1 / -1;
     height: 500px;
-    aspect-ratio: auto;
     border-radius: var(--radius-xl);
   }
-}
-
-.card-cinematic .card-thumb {
-  height: 100%;
-}
-
-.card-cinematic .card-info-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: var(--space-8) var(--space-4) var(--space-4);
-  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  z-index: 5;
-}
-
-.card-cinematic .card-title {
-  font-size: var(--text-lg);
-  font-family: 'Playfair Display', serif;
-  font-weight: 700;
-  color: #fff;
-  line-height: 1.2;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-}
-
-.card-cinematic .card-meta {
-  color: rgba(255,255,255,0.8);
-  font-size: var(--text-xs);
-  display: flex;
-  gap: var(--space-3);
-  align-items: center;
-}
-
-@media(min-width: 768px) {
-  .card-cinematic .card-info-overlay {
-    padding: var(--space-12) var(--space-6) var(--space-6);
-    gap: var(--space-2);
+  
+  .card-cinematic .card-thumb {
+    height: 100%;
+    aspect-ratio: auto;
   }
+  
+  .card-cinematic .card-info-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-12) var(--space-6) var(--space-6);
+    background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+    z-index: 5;
+  }
+  
   .card-cinematic .card-title {
     font-size: var(--text-2xl);
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    order: 1; /* Reset order to standard layout (bottom) */
   }
+
+  .card-cinematic:hover .card-title {
+    color: #fff; /* Keep white on hover for hero */
+  }
+  
   .card-cinematic .card-meta {
+    color: rgba(255,255,255,0.8);
     font-size: var(--text-sm);
+    gap: var(--space-3);
   }
 }
 
@@ -1344,17 +1363,43 @@ body.theme-transitioning * {
   font-weight: 500;
 }
 
-/* Override default link color for video-cards to prevent turning blue */
-a.video-card {
+/* Override default link behavior for video-cards, now handled via overlay link */
+.video-card {
   color: inherit;
   text-decoration: none;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
-a.video-card:hover {
+.video-card .card-main-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  text-decoration: none;
+  color: transparent;
+  outline: none;
+}
+
+.video-card:hover {
   text-decoration: none;
   color: inherit;
+}
+
+.video-card .card-info-overlay, 
+.video-card .card-info {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.video-card .card-info-overlay a, 
+.video-card .card-info a,
+.video-card .card-info-overlay button, 
+.video-card .card-info button {
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
 }
 
 /* ==========================================
@@ -1362,6 +1407,7 @@ a.video-card:hover {
    ========================================== */
 
 .trending-section {
+  grid-column: 1 / -1;
   margin-bottom: var(--space-6);
   padding-bottom: var(--space-4);
   border-bottom: 1px solid var(--color-border);
@@ -1453,4 +1499,32 @@ a.video-card:hover {
   0% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.4); }
   70% { box-shadow: 0 0 0 6px rgba(255, 75, 43, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); }
+}
+
+/* --- Social Signals & Community Psychology --- */
+.social-proof-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--color-danger);
+  font-weight: 500;
+  margin-top: 4px;
+}
+.live-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-danger);
+  border-radius: 50%;
+  animation: pulse-dot-hot 2s infinite;
+  margin-right: 4px;
+}
+.badge-trending { background: linear-gradient(135deg, #FF4B2B 0%, #FF416C 100%); color: white; }
+.badge-hot { background: linear-gradient(135deg, #f12711 0%, #f5af19 100%); color: white; }
+.badge-popular { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
+.like-ratio {
+  color: var(--color-success);
+  font-weight: 600;
+  margin-right: 8px;
 }

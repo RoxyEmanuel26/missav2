@@ -4,8 +4,8 @@
  * Highly bandwidth-safe: disables itself on 3G/2G or Data Saver mode.
  */
 
-import api from './api.js?v=2.2.2';
-import { Telemetry } from './telemetry.js?v=2.2.2';
+import api from './api.js?v=2.3.2';
+import { Telemetry } from './telemetry.js?v=2.3.2';
 
 const Prefetcher = {
   hoverTimers: new Map(),
@@ -75,16 +75,16 @@ const Prefetcher = {
     
     try {
       if (cleanPath.startsWith('/watch')) {
-        import('./player.js?v=2.2.2');
+        import('./player.js?v=2.3.2');
       } else if (cleanPath.startsWith('/search')) {
-        import('./search.js?v=2.2.2');
+        import('./search.js?v=2.3.2');
       } else if (cleanPath.startsWith('/trending')) {
-        import('./trending.js?v=2.2.2');
+        import('./trending.js?v=2.3.2');
       } else if (cleanPath.startsWith('/recent')) {
-        import('./recent.js?v=2.2.2');
+        import('./recent.js?v=2.3.2');
       } else {
         // Fallback for categories, tags, homepage etc.
-        import('./feed.js?v=2.2.2');
+        import('./feed.js?v=2.3.2');
       }
     } catch (err) {
       // Ignore dynamic import aborts or failures on prefetch

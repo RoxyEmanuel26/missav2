@@ -4,7 +4,7 @@
  * to detect Crawl Budget Waste, Soft 404s, and Duplicate Indexing risks.
  */
 
-import { Telemetry } from './telemetry.js?v=2.2.2';
+import { Telemetry } from './telemetry.js?v=2.3.2';
 
 export const SeoDiagnostics = {
   runAudit() {

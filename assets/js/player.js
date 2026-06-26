@@ -5,13 +5,14 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.2.2';
-import ui from './ui.js?v=2.2.2';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.2.2';
-import i18n from './i18n.js?v=2.2.2';
-import { SessionHistory } from './history.js?v=2.2.2';
-import ReferralSystem from './referral.js?v=2.2.2';
-import { Analytics } from './analytics.js?v=2.2.2';
+import api from './api.js?v=2.3.2';
+import ui from './ui.js?v=2.3.2';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.3.2';
+import i18n from './i18n.js?v=2.3.2';
+import { SessionHistory } from './history.js?v=2.3.2';
+import ReferralSystem from './referral.js?v=2.3.2';
+import { Analytics } from './analytics.js?v=2.3.2';
+import { getEngagementStats, initLiveActivityPulse, getLiveWatching } from './social-signals.js?v=2.3.2';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -20,6 +21,9 @@ const dislikedVideos = new Set();
 
 // Observer untuk mendeteksi perubahan ukuran placeholder pemutar
 let placeholderObserver = null;
+let upNextTimeoutId = null;
+let upNextCountdownId = null;
+let playbackTrackerInterval = null;
 
 // Premium inline SVG fallback ketika thumbnail gagal dimuat
 const SVG_FALLBACK_THUMB = `data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22168%22 height=%2294%22 viewBox=%220 0 168 94%22><rect width=%22168%22 height=%2294%22 fill=%22%23212121%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23717171%22 font-family=%22sans-serif%22 font-weight=%22bold%22 font-size=%2210%22>NO IMAGE</text></svg>`;
@@ -70,6 +74,11 @@ export async function init(id) {
 
   // Bersihkan observer lama jika ada sebelum memuat halaman baru
   disconnectPlaceholderObserver();
+
+  if (playbackTrackerInterval) {
+    clearInterval(playbackTrackerInterval);
+    playbackTrackerInterval = null;
+  }
 
   const mainApp = document.getElementById('app-content');
   if (!mainApp) return;
@@ -225,6 +234,11 @@ export async function init(id) {
       document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
       renderPostMeta(post, id);
       loadRelatedVideos(post);
+      let durStr = post.duration || '';
+      if (!durStr || durStr === '00:00:00') {
+        durStr = getDeterministicDuration(post.id);
+      }
+      startPlaybackTracker(id, parseDurationToSeconds(durStr));
       
       ui.showToast(i18n.t('maximize_player_toast'));
     } else {
@@ -253,14 +267,60 @@ export async function init(id) {
       };
       
       window.missavJState.activeVideo = post;
+
+      // Continue Watching resume logic
+      const historyList = SessionHistory.getHistory();
+      const savedItem = historyList.find(p => String(p.id) === String(id));
+      let resumeSeconds = 0;
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlTime = parseInt(urlParams.get('t'), 10);
+      if (!isNaN(urlTime) && urlTime > 0) {
+        resumeSeconds = urlTime;
+      } else if (savedItem && savedItem.watchedTime > 5) {
+        const isNearlyCompleted = savedItem.duration && (savedItem.watchedTime / savedItem.duration > 0.95);
+        if (!isNearlyCompleted) {
+          resumeSeconds = savedItem.watchedTime;
+        }
+      }
       
       // Inject secure custom poster markup into the global player container
       const playerContainer = document.getElementById('player-container');
       if (playerContainer) {
         const iframeMarkup = (player && player.iframe_html) || post.iframe_html || (post.embed_url ? `<iframe src="${post.embed_url}"></iframe>` : '');
-        
+        let updatedIframeMarkup = iframeMarkup;
+        if (resumeSeconds > 0) {
+          const srcRegex = /src=["']([^"']+)["']/i;
+          const match = iframeMarkup.match(srcRegex);
+          if (match) {
+            const originalSrc = match[1];
+            const separator = originalSrc.includes('?') ? '&' : '?';
+            const newSrc = `${originalSrc}${separator}t=${resumeSeconds}&start=${resumeSeconds}&position=${resumeSeconds}`;
+            updatedIframeMarkup = iframeMarkup.replace(originalSrc, newSrc);
+            console.log(`[Playback Resume] Seeking to ${resumeSeconds}s via URL: ${newSrc}`);
+          }
+        }
+
         const loadRealVideo = () => {
-          playerContainer.innerHTML = getSecureIframeMarkup(iframeMarkup);
+          playerContainer.innerHTML = getSecureIframeMarkup(updatedIframeMarkup);
+          let durStr = post.duration || '';
+          if (!durStr || durStr === '00:00:00') {
+            durStr = getDeterministicDuration(post.id);
+          }
+          startPlaybackTracker(id, parseDurationToSeconds(durStr));
+          
+          if (resumeSeconds > 0) {
+            const formatTime = (sec) => {
+              const h = Math.floor(sec / 3600);
+              const m = Math.floor((sec % 3600) / 60);
+              const s = sec % 60;
+              const pad = (n) => String(n).padStart(2, '0');
+              return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+            };
+            setTimeout(() => {
+              ui.showToast(`${i18n.t('toast_resume_playback') || 'Resumed playback from'} ${formatTime(resumeSeconds)} ⏱️`);
+            }, 1000);
+          }
           
           // Hide the watch page loader shimmer when iframe is loaded
           const iframe = playerContainer.querySelector('iframe');
@@ -373,24 +433,21 @@ export function renderPostMeta(post, id) {
     const viewsNum = parseInt(post.views, 10) || 0;
     document.getElementById('player-views-count').textContent = `${ui.formatNumber(viewsNum)} ${i18n.t('views')}`;
     
-    // [SOCIAL SIGNALS] Heuristic calculation of live viewers based on views
-    const timeSeed = new Date().getHours();
-    const liveRatio = 0.005 + (Math.abs(Math.sin(parseInt(id, 10) + timeSeed)) * 0.015);
-    let liveViewers = Math.floor(viewsNum * liveRatio);
-    if (viewsNum > 10000 && liveViewers < 12) liveViewers = 12 + (parseInt(id, 10) % 30);
-    if (viewsNum > 50000 && liveViewers < 45) liveViewers = 45 + (parseInt(id, 10) % 80);
-    if (liveViewers > 4500) liveViewers = 4500 + (parseInt(id, 10) % 500);
-
+    // [SOCIAL SIGNALS] Deterministic calculation of live viewers, likes, and comments
+    const stats = getEngagementStats(id, viewsNum);
+    const liveViewers = getLiveWatching(id, viewsNum);
+    
+    // Inject Plausible Likes/Dislikes visually
+    const likesCountEl = document.getElementById('player-likes-count');
+    if (likesCountEl) {
+      likesCountEl.innerHTML = `<span class="like-ratio">${stats.approvalRating}% 👍</span> ${stats.likes.toLocaleString(i18n.getLang())} Likes`;
+    }
+    
+    // Initialize Live Activity Pulse (simulates heartbeat)
     const liveViewersEl = document.getElementById('live-viewers-count');
-    const pulseDot = document.querySelector('.social-proof-meta .live-pulse-dot');
     if (liveViewersEl) {
-      if (liveViewers > 10) {
-        liveViewersEl.textContent = `${liveViewers.toLocaleString()} watching now`;
-        document.getElementById('player-live-viewers').style.display = 'inline-flex';
-        if (pulseDot) pulseDot.className = `live-pulse-dot ${liveViewers > 500 ? 'hot' : ''}`;
-      } else {
-        document.getElementById('player-live-viewers').style.display = 'none';
-      }
+      document.getElementById('player-live-viewers').style.display = 'inline-flex';
+      initLiveActivityPulse(liveViewersEl, id, viewsNum);
     }
     
   const dateEl = document.getElementById('player-publish-date');
@@ -1148,6 +1205,259 @@ export function showShareModal(title, shareUrl, thumbnailUrl) {
   // Show
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Inisialisasi engine Autoplay/Up Next
+ */
+function initUpNextEngine(currentPost, nextPost) {
+  // Reset any timers
+  if (upNextTimeoutId) {
+    clearTimeout(upNextTimeoutId);
+    upNextTimeoutId = null;
+  }
+  if (upNextCountdownId) {
+    clearInterval(upNextCountdownId);
+    upNextCountdownId = null;
+  }
+
+  // Setup click listener for Auto-Play toggle button
+  const toggleBtn = document.getElementById('autoplay-toggle');
+  if (toggleBtn) {
+    // Read saved setting
+    const savedAutoPlay = localStorage.getItem('missavj_autoplay');
+    if (savedAutoPlay === 'false') {
+      toggleBtn.classList.remove('active');
+    } else {
+      toggleBtn.classList.add('active');
+    }
+
+    if (!toggleBtn.dataset.listenerBound) {
+      toggleBtn.dataset.listenerBound = 'true';
+      toggleBtn.addEventListener('click', () => {
+        toggleBtn.classList.toggle('active');
+        const isActive = toggleBtn.classList.contains('active');
+        localStorage.setItem('missavj_autoplay', isActive ? 'true' : 'false');
+        if (!isActive) {
+          // Cancel countdown
+          if (upNextTimeoutId) clearTimeout(upNextTimeoutId);
+          if (upNextCountdownId) clearInterval(upNextCountdownId);
+          removeUpNextBanner();
+        }
+      });
+    }
+  }
+
+  // Listen to postMessage from embed player
+  const handlePlayerMessage = (event) => {
+    const isAutoplayEnabled = toggleBtn ? toggleBtn.classList.contains('active') : true;
+    if (!isAutoplayEnabled) return;
+
+    try {
+      let data = event.data;
+      if (typeof data === 'string') {
+        data = JSON.parse(data);
+      }
+      
+      const isEnded = 
+        data.event === 'ended' || 
+        data.event === 'finish' ||
+        data.state === 'completed' ||
+        (data.event === 'onStateChange' && data.data === 0) ||
+        data.type === 'ended';
+
+      if (isEnded) {
+        startUpNextCountdown(nextPost);
+      }
+    } catch (e) {
+      // Ignore non-json or irrelevant messages
+    }
+  };
+
+  if (window._upNextMessageListener) {
+    window.removeEventListener('message', window._upNextMessageListener);
+  }
+  window._upNextMessageListener = handlePlayerMessage;
+  window.addEventListener('message', handlePlayerMessage);
+}
+
+function startUpNextCountdown(nextPost) {
+  if (upNextTimeoutId) clearTimeout(upNextTimeoutId);
+  if (upNextCountdownId) clearInterval(upNextCountdownId);
+
+  let secondsLeft = 8;
+  showUpNextBanner(nextPost, secondsLeft);
+
+  upNextCountdownId = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft <= 0) {
+      clearInterval(upNextCountdownId);
+      upNextCountdownId = null;
+      triggerAutoPlayNavigate(nextPost);
+    } else {
+      updateUpNextBannerSeconds(secondsLeft);
+    }
+  }, 1000);
+
+  upNextTimeoutId = setTimeout(() => {
+    if (upNextCountdownId) {
+      clearInterval(upNextCountdownId);
+      upNextCountdownId = null;
+    }
+    triggerAutoPlayNavigate(nextPost);
+  }, 8000);
+}
+
+function triggerAutoPlayNavigate(nextPost) {
+  removeUpNextBanner();
+  const targetUrl = window.missavJGetWatchUrl ? window.missavJGetWatchUrl(nextPost.id, nextPost.code, nextPost.title) : `/watch/${nextPost.id}`;
+  const langPrefix = i18n.getLang() ? `/${i18n.getLang()}` : '';
+  window.missavJNavigate(`${langPrefix}${targetUrl}`);
+}
+
+function showUpNextBanner(nextPost, seconds) {
+  removeUpNextBanner();
+  
+  const banner = document.createElement('div');
+  banner.id = 'up-next-countdown-banner';
+  banner.className = 'up-next-countdown-banner';
+  
+  const title = i18n.translateVideoTitle(nextPost.title);
+  const code = nextPost.code || '';
+  
+  banner.innerHTML = `
+    <div class="up-next-banner-content">
+      <div class="up-next-banner-title">
+        <span class="next-label">${i18n.t('up_next') || 'Up Next'}:</span>
+        <span class="next-video-title">${ui.escapeHTML(code)} - ${ui.escapeHTML(title)}</span>
+      </div>
+      <div class="up-next-banner-timer">
+        Playing in <span id="up-next-seconds">${seconds}</span>s...
+      </div>
+      <div class="up-next-banner-actions">
+        <button id="up-next-cancel-btn" class="up-next-btn cancel-btn">Cancel</button>
+        <button id="up-next-play-btn" class="up-next-btn play-btn">Play Now</button>
+      </div>
+    </div>
+  `;
+
+  const container = document.querySelector('.player-container-wrapper');
+  if (container) {
+    container.appendChild(banner);
+  }
+
+  const cancelBtn = banner.querySelector('#up-next-cancel-btn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+      if (upNextTimeoutId) clearTimeout(upNextTimeoutId);
+      if (upNextCountdownId) clearInterval(upNextCountdownId);
+      removeUpNextBanner();
+    });
+  }
+
+  const playBtn = banner.querySelector('#up-next-play-btn');
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      triggerAutoPlayNavigate(nextPost);
+    });
+  }
+}
+
+function updateUpNextBannerSeconds(seconds) {
+  const el = document.getElementById('up-next-seconds');
+  if (el) el.textContent = seconds;
+}
+
+function removeUpNextBanner() {
+  const banner = document.getElementById('up-next-countdown-banner');
+  if (banner) {
+    banner.remove();
+  }
+}
+
+function parseDurationToSeconds(durationStr) {
+  if (!durationStr) return 0;
+  const parts = durationStr.split(':').map(Number);
+  if (parts.some(isNaN)) return 0;
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  return 0;
+}
+
+function startPlaybackTracker(id, initialDuration) {
+  if (playbackTrackerInterval) {
+    clearInterval(playbackTrackerInterval);
+  }
+
+  let totalDuration = initialDuration || 0;
+  let secondsWatched = 0;
+  
+  const history = SessionHistory.getHistory();
+  const savedItem = history.find(p => String(p.id) === String(id));
+  if (savedItem) {
+    secondsWatched = savedItem.watchedTime || 0;
+    if (savedItem.duration) totalDuration = savedItem.duration;
+  }
+
+  let lastTickTime = Date.now();
+  playbackTrackerInterval = setInterval(() => {
+    const poster = document.getElementById('player-custom-poster');
+    
+    if (document.hidden) return;
+
+    if (poster && poster.style.display !== 'none') {
+      return;
+    }
+
+    const now = Date.now();
+    const delta = Math.floor((now - lastTickTime) / 1000);
+    lastTickTime = now;
+
+    if (delta > 0 && delta < 10) {
+      secondsWatched += delta;
+      SessionHistory.updateProgress(id, secondsWatched, totalDuration);
+    }
+  }, 1000);
+
+  const handlePlayerMessage = (event) => {
+    try {
+      let data = event.data;
+      if (typeof data === 'string') {
+        data = JSON.parse(data);
+      }
+      
+      let timeUpdate = null;
+      let durationUpdate = null;
+
+      if (data.event === 'time' && typeof data.position === 'number') {
+        timeUpdate = Math.floor(data.position);
+        if (typeof data.duration === 'number') durationUpdate = Math.floor(data.duration);
+      } else if (data.event === 'infoDelivery' && data.info) {
+        if (typeof data.info.currentTime === 'number') timeUpdate = Math.floor(data.info.currentTime);
+        if (typeof data.info.duration === 'number') durationUpdate = Math.floor(data.info.duration);
+      } else if (typeof data.currentTime === 'number') {
+        timeUpdate = Math.floor(data.currentTime);
+        if (typeof data.duration === 'number') durationUpdate = Math.floor(data.duration);
+      }
+
+      if (timeUpdate !== null && timeUpdate >= 0) {
+        secondsWatched = timeUpdate;
+        if (durationUpdate && durationUpdate > 0) totalDuration = durationUpdate;
+        SessionHistory.updateProgress(id, secondsWatched, totalDuration);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  };
+
+  if (window._playerPlaybackMessageListener) {
+    window.removeEventListener('message', window._playerPlaybackMessageListener);
+  }
+  window._playerPlaybackMessageListener = handlePlayerMessage;
+  window.addEventListener('message', handlePlayerMessage);
 }
 
 export default { 

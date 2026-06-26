@@ -5,11 +5,12 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.2.2';
-import ui from './ui.js?v=2.2.2';
-import filter from './filter.js?v=2.2.2';
-import i18n from './i18n.js?v=2.2.2';
-import { SessionHistory } from './history.js?v=2.2.2';
+import api from './api.js?v=2.3.2';
+import ui from './ui.js?v=2.3.2';
+import filter from './filter.js?v=2.3.2';
+import i18n from './i18n.js?v=2.3.2';
+import { SessionHistory } from './history.js?v=2.3.2';
+import { getLiveWatching, getTrendingBadge } from './social-signals.js?v=2.3.2';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -142,32 +143,24 @@ export function renderVideoCard(post, index = 0) {
   
   // Advanced Image Loading Strategy for Core Web Vitals
   const isLCP = index === 0;
-  const isAboveFold = index < 4;
-  const imgAttributes = `width="320" height="180" style="aspect-ratio: 16/9; background: #000;" decoding="async" ${isAboveFold ? '' : 'loading="lazy"'} ${isLCP ? 'fetchpriority="high"' : ''} onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"`;
+  const isAboveFold = index < 8; // Load first 8 images immediately for faster perceived loading
+  const imgAttributes = `width="320" height="180" style="aspect-ratio: 16/9; background: #000;" ${isAboveFold ? 'decoding="sync"' : 'decoding="async" loading="lazy"'} ${isLCP ? 'fetchpriority="high"' : ''} onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"`;
 
   // Semantic Watch Link
   const watchUrl = window.missavJGetWatchUrl ? window.missavJGetWatchUrl(safeId, safeCode, safeTitle) : `/watch/${safeId}`;
   
-  // [SOCIAL SIGNALS] Heuristic calculation of live viewers based on views and recency proxy
+  // [SOCIAL SIGNALS] Deterministic calculation of live viewers and badges
   const rawViews = parseInt(post.views, 10) || 0;
-  const postId = parseInt(post.id, 10) || 0;
-  // A deterministic pseudo-random formula that scales with total views
-  const timeSeed = new Date().getHours();
-  const liveRatio = 0.005 + (Math.abs(Math.sin(postId + timeSeed)) * 0.015); // Between 0.5% and 2%
-  let liveViewers = Math.floor(rawViews * liveRatio);
-  // Ensure a base minimum for highly viewed videos to prevent 0
-  if (rawViews > 10000 && liveViewers < 12) liveViewers = 12 + (postId % 30);
-  if (rawViews > 50000 && liveViewers < 45) liveViewers = 45 + (postId % 80);
-  // Cap it so it doesn't look completely ridiculous
-  if (liveViewers > 4500) liveViewers = 4500 + (postId % 500);
+  const liveViewers = getLiveWatching(post.id, rawViews);
+  const trendingBadgeMarkup = getTrendingBadge(post.id, rawViews);
 
   let socialProofHtml = '';
-  if (liveViewers > 10) {
-    const isHot = liveViewers > 500 || post._isTrending;
+  if (liveViewers > 5) {
+    const isHot = liveViewers > 150 || post._isTrending;
     socialProofHtml = `
       <div class="social-proof-meta">
         <span class="live-pulse-dot ${isHot ? 'hot' : ''}"></span>
-        <span>${liveViewers.toLocaleString()} watching</span>
+        <span>${liveViewers.toLocaleString(i18n.getLang())} ${i18n.t('watching_now') || 'watching now'}</span>
       </div>
     `;
   }
@@ -177,10 +170,11 @@ export function renderVideoCard(post, index = 0) {
   // For cinematic card, overlay metadata is used. For editorial, it's below the thumb.
   if (index === 0) {
     return `
-      <a href="${semanticHref}" class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+      <div class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+        <a href="${semanticHref}" class="card-main-link" aria-label="Watch ${safeTitle}"></a>
         <div class="card-thumb">
           <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" ${imgAttributes}>
-          ${post._isTrending ? `<span class="badge badge-trending">TRENDING</span>` : ''}
+          ${trendingBadgeMarkup || (post._isTrending ? `<span class="badge badge-trending">TRENDING</span>` : '')}
           ${uncensoredBadge ? `<span class="badge badge-uncensored">${i18n.t('badge_uncensored')}</span>` : ''}
           ${durationBadge ? `<span class="badge badge-duration">${safeDuration}</span>` : ''}
           ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
@@ -195,14 +189,15 @@ export function renderVideoCard(post, index = 0) {
           ${socialProofHtml}
           <h3 class="card-title" title="${safeTitle}" data-original-title="${safeOriginalTitleAttr}">${safeTitle}</h3>
         </div>
-      </a>
+      </div>
     `;
   } else {
     return `
-      <a href="${semanticHref}" class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+      <div class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+        <a href="${semanticHref}" class="card-main-link" aria-label="Watch ${safeTitle}"></a>
         <div class="card-thumb">
           <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" ${imgAttributes}>
-          ${post._isTrending ? `<span class="badge badge-trending">TRENDING</span>` : ''}
+          ${trendingBadgeMarkup || (post._isTrending ? `<span class="badge badge-trending">TRENDING</span>` : '')}
           ${uncensoredBadge ? `<span class="badge badge-uncensored">${i18n.t('badge_uncensored')}</span>` : ''}
           ${durationBadge ? `<span class="badge badge-duration">${safeDuration}</span>` : ''}
           ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
@@ -218,7 +213,7 @@ export function renderVideoCard(post, index = 0) {
           </div>
           ${socialProofHtml}
         </div>
-      </a>
+      </div>
     `;
   }
 }
@@ -327,21 +322,60 @@ export async function init(filters = {}, signal) {
   if (randomMode) { // Only on root homepage
     const history = SessionHistory.getHistory();
     if (history && history.length > 0) {
-      // Render a mini-row of recently watched videos
-      const historyCards = history.slice(0, 4).map(post => `
-        <a href="${window.missavJGetWatchUrl ? window.missavJGetWatchUrl(post.id, post.code, post.title) : `/watch/${post.id}`}" class="history-card" title="${ui.escapeHTML(post.title)}">
-          <div class="history-thumb"><img src="${ui.getProxiedThumbnail(post.thumbnail)}" loading="lazy" style="aspect-ratio:16/9; width:100%; object-fit:cover; border-radius:8px;"></div>
-          <div class="history-title" style="font-size:0.8rem; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-primary);">${ui.escapeHTML(post.title)}</div>
-        </a>
-      `).join('');
+      // Render a mini-row of recently watched videos (up to 6 items)
+      const historyCards = history.slice(0, 6).map(post => {
+        const watched = post.watchedTime || 0;
+        const dur = post.duration || 0;
+        const pct = dur > 0 ? Math.min(Math.round((watched / dur) * 100), 100) : 0;
+        
+        const progressBar = watched > 0 ? `
+          <div class="history-progress-bar">
+            <div class="history-progress-fill" style="width: ${Math.max(pct, 1)}%"></div>
+          </div>
+        ` : '';
+        
+        let progressLabel = '';
+        if (watched > 0 && dur > 0) {
+          const leftSec = Math.max(dur - watched, 0);
+          const leftMin = Math.floor(leftSec / 60);
+          if (leftMin > 0) {
+            progressLabel = `<span class="history-progress-label">${leftMin}m left</span>`;
+          } else {
+            progressLabel = `<span class="history-progress-label">${pct}%</span>`;
+          }
+        }
+        
+        const watchUrl = window.missavJGetWatchUrl ? window.missavJGetWatchUrl(post.id, post.code, post.title) : `/watch/${post.id}`;
+        const currentLang = i18n.getLang() || 'en';
+        const semanticHref = `/${currentLang}${watchUrl}`;
+
+        return `
+          <div class="history-card-wrapper" id="history-card-${post.id}">
+            <a href="${semanticHref}" class="history-card" title="${ui.escapeHTML(post.title)}">
+              <div class="history-thumb">
+                <img src="${ui.getProxiedThumbnail(post.thumbnail)}" loading="lazy" style="aspect-ratio:16/9; width:100%; object-fit:cover; border-radius:8px;">
+                ${progressBar}
+                ${progressLabel}
+              </div>
+              <div class="history-card-info">
+                ${post.code ? `<span class="history-code">${ui.escapeHTML(post.code)}</span>` : ''}
+                <div class="history-title" title="${ui.escapeHTML(post.title)}">${ui.escapeHTML(post.title)}</div>
+              </div>
+            </a>
+            <button class="history-dismiss-btn" data-id="${post.id}" title="Remove from Continue Watching">✕</button>
+          </div>
+        `;
+      }).join('');
       
       continueWatchingHtml = `
         <div class="continue-watching-section fadeInUp" style="margin-bottom: 24px; padding: 16px; background: rgba(255,255,255,0.02); border-radius: var(--radius-lg); border: 1px solid rgba(255,255,255,0.05);">
-          <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            ${i18n.t('continue_watching') || 'Continue Watching'}
+          <h3 style="margin: 0 0 12px 0; font-size: 1.1rem; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <span style="display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              ${i18n.t('continue_watching') || 'Continue Watching'}
+            </span>
           </h3>
-          <div class="history-row" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+          <div class="history-row">
             ${historyCards}
           </div>
         </div>
@@ -377,6 +411,33 @@ export async function init(filters = {}, signal) {
     </div>
     <div id="scroll-sentinel" class="scroll-sentinel"></div>
   `;
+
+  // Bind Dismiss buttons for Continue Watching
+  const dismissBtns = mainApp.querySelectorAll('.history-dismiss-btn');
+  dismissBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const id = btn.dataset.id;
+      SessionHistory.removeWatch(id);
+      
+      // Animate card dismissal (fade out)
+      const wrapper = document.getElementById(`history-card-${id}`);
+      if (wrapper) {
+        wrapper.classList.add('dismissed');
+        setTimeout(() => {
+          wrapper.remove();
+          // If no items are left, remove the entire continue watching section
+          const row = mainApp.querySelector('.history-row');
+          if (row && row.children.length === 0) {
+            const section = mainApp.querySelector('.continue-watching-section');
+            if (section) section.remove();
+          }
+        }, 300);
+      }
+    });
+  });
 
   // 2. Render initial page skeletal loaders
   const grid = document.getElementById('video-grid');
@@ -577,8 +638,7 @@ async function fetchAndRenderFeed(isInitial = false, signal) {
       `;
       trendingPosts.forEach((post) => {
         post._isTrending = true; 
-        totalRenderedVideos++;
-        trendingHtml += renderVideoCard(post, totalRenderedVideos - 1);
+        trendingHtml += renderVideoCard(post, 1);
       });
       trendingHtml += `
           </div>

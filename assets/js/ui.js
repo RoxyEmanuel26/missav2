@@ -9,6 +9,14 @@ let currentTheme = 'dark';
 
 const ui = {
   /**
+   * Format numbers with localized separators (e.g. 1.000.000)
+   */
+  formatNumber(num) {
+    if (isNaN(num)) return num;
+    return new Intl.NumberFormat(window.i18n ? window.i18n.getLang() : 'id-ID').format(num);
+  },
+
+  /**
    * Mengamankan teks dari serangan XSS dengan melakukan encoding pada karakter HTML
    * @param {string} str - Teks input mentah dari API atau input user
    * @returns {string} Teks tersanitasi aman dimasukkan ke innerHTML
@@ -36,7 +44,14 @@ const ui = {
                     window.location.hostname === 'localhost' || 
                     window.location.hostname === '127.0.0.1';
     if (isLocal) {
-      return url;
+      // Use a fast public image proxy on local to resize images (simulating production behavior)
+      // This prevents loading massive original images which causes slow perceived performance
+      try {
+        const cleanUrl = url.replace(/^https?:\/\//, '');
+        return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=320&output=webp&we`;
+      } catch (e) {
+        return url;
+      }
     }
     try {
       // Base64 encode the URL to bypass AdBlocker keyword blocks on "apijav"

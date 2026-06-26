@@ -4,7 +4,7 @@
  * untuk provider Adsterra & ExoClick, dan transparansi overlay di video player.
  */
 
-import ui from './ui.js?v=2.2.2';
+import ui from './ui.js?v=2.3.2';
 
 
 // Konfigurasi Kunci Iklan
@@ -255,18 +255,20 @@ function clearAdsterraSession() {
         document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=." + window.location.hostname.replace(/^www\./, '');
       }
     }
-    // Clear localStorage
-    for (let key in localStorage) {
+    // Clear localStorage (copy keys first to avoid mutation bugs)
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes('missav') || key.includes('gemini')) return;
       if (key.includes('adsterra') || key.includes('pop') || key.length > 10) {
         localStorage.removeItem(key);
       }
-    }
+    });
     // Clear sessionStorage
-    for (let key in sessionStorage) {
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.includes('missav') || key.includes('gemini')) return;
       if (key.includes('adsterra') || key.includes('pop') || key.length > 10) {
         sessionStorage.removeItem(key);
       }
-    }
+    });
   } catch (e) {
     console.error('[Ads] Error clearing ad session:', e);
   }
