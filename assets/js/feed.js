@@ -5,12 +5,12 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.6.14';
-import ui from './ui.js?v=2.6.14';
-import filter from './filter.js?v=2.6.14';
-import i18n from './i18n.js?v=2.6.14';
-import { SessionHistory } from './history.js?v=2.6.14';
-import { getLiveWatching, getTrendingBadge } from './social-signals.js?v=2.6.14';
+import api from './api.js?v=2.6.17';
+import ui from './ui.js?v=2.6.17';
+import filter from './filter.js?v=2.6.17';
+import i18n from './i18n.js?v=2.6.17';
+import { SessionHistory } from './history.js?v=2.6.17';
+import { getLiveWatching, getTrendingBadge } from './social-signals.js?v=2.6.17';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -141,13 +141,14 @@ export function renderVideoCard(post, index = 0, disableCinematic = false) {
 
   const safeEmbedUrl = ui.escapeHTML((post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&'));
 
-  const isCinematic = !disableCinematic && index === 0 && window.innerWidth >= 768;
-  const cardVariant = isCinematic ? 'card-cinematic' : 'card-editorial';
+  const isCinematic = false; // Disabled by user request for uniform grid design
+  const cardVariant = 'card-editorial';
   
   // Advanced Image Loading Strategy for Core Web Vitals
   const isLCP = index === 0;
   const isAboveFold = index < 8; // Load first 8 images immediately for faster perceived loading
-  const imgAttributes = `width="320" height="180" style="aspect-ratio: 16/9; background: #000;" ${isAboveFold ? 'decoding="sync"' : 'decoding="async" loading="lazy"'} ${isLCP ? 'fetchpriority="high"' : ''} onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"`;
+  const rawThumb = (post.thumbnail || '').replace(/'/g, "\\'");
+  const imgAttributes = `width="320" height="180" style="aspect-ratio: 16/9; background: #000;" ${isAboveFold ? 'decoding="sync"' : 'decoding="async" loading="lazy"'} ${isLCP ? 'fetchpriority="high"' : ''} onerror="if(this.src !== '${rawThumb}') { this.src='${rawThumb}'; } else { this.onerror=null; this.src='${SVG_FALLBACK_THUMB}'; }"`;
 
   // Semantic Watch Link
   const watchUrl = window.missavJGetWatchUrl ? window.missavJGetWatchUrl(safeId, safeCode, safeTitle) : `/watch/${safeId}`;

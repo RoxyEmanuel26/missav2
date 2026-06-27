@@ -3,7 +3,7 @@
  * Mengintegrasikan front-end dengan apiJAV REST API.
  * Menyediakan fungsi-fungsi fetch terbungkus dengan penanganan error.
  */
-import { Telemetry } from './telemetry.js?v=2.6.14';
+import { Telemetry } from './telemetry.js?v=2.6.17';
 
 const BASE = (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'https://server.apijav.com/wp-json/myvideo/v1'

@@ -5,14 +5,14 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.6.14';
-import ui from './ui.js?v=2.6.14';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.6.14';
-import i18n from './i18n.js?v=2.6.14';
-import { SessionHistory } from './history.js?v=2.6.14';
-import ReferralSystem from './referral.js?v=2.6.14';
-import { Analytics } from './analytics.js?v=2.6.14';
-import { getEngagementStats, initLiveActivityPulse, getLiveWatching } from './social-signals.js?v=2.6.14';
+import api from './api.js?v=2.6.17';
+import ui from './ui.js?v=2.6.17';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.6.17';
+import i18n from './i18n.js?v=2.6.17';
+import { SessionHistory } from './history.js?v=2.6.17';
+import ReferralSystem from './referral.js?v=2.6.17';
+import { Analytics } from './analytics.js?v=2.6.17';
+import { getEngagementStats, initLiveActivityPulse, getLiveWatching } from './social-signals.js?v=2.6.17';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -953,6 +953,7 @@ function renderRelatedRowCard(post, index) {
   const upNextClass = isUpNext ? ' up-next-highlight' : '';
   const upNextBadge = isUpNext ? `<span class="up-next-badge">${i18n.t('up_next') || 'Up Next'}</span>` : '';
 
+  const rawThumb = (post.thumbnail || '').replace(/'/g, "\\'");
   return `
     <div class="related-video-card fadeInUp${upNextClass}" data-id="${safeId}" data-code="${ui.escapeHTML(post.code || '')}" data-title="${safeTitle}" ${animationStyle}>
       <div class="related-thumb">
@@ -965,7 +966,7 @@ function renderRelatedRowCard(post, index) {
           style="aspect-ratio: 16/9; background: #000;"
           loading="lazy"
           decoding="async"
-          onerror="this.onerror=null; this.src='${SVG_FALLBACK_THUMB}';"
+          onerror="if(this.src !== '${rawThumb}') { this.src='${rawThumb}'; } else { this.onerror=null; this.src='${SVG_FALLBACK_THUMB}'; }"
         >
         ${uncensoredBadge}
         ${durationBadge}
@@ -1469,7 +1470,7 @@ async function loadRandomBottomVideos(studioName) {
     }
     
     // Render menggunakan import dinamis dari feed.js
-    import('./feed.js?v=2.6.14').then(feedModule => {
+    import('./feed.js?v=2.6.17').then(feedModule => {
       // disableCinematic = true agar grid seragam
       grid.innerHTML = selectedPosts.map((post, idx) => feedModule.renderVideoCard(post, idx, true)).join('');
       ui.lazyLoadImages();
