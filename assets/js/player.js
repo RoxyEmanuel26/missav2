@@ -5,14 +5,14 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.3.2';
-import ui from './ui.js?v=2.3.2';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.3.2';
-import i18n from './i18n.js?v=2.3.2';
-import { SessionHistory } from './history.js?v=2.3.2';
-import ReferralSystem from './referral.js?v=2.3.2';
-import { Analytics } from './analytics.js?v=2.3.2';
-import { getEngagementStats, initLiveActivityPulse, getLiveWatching } from './social-signals.js?v=2.3.2';
+import api from './api.js?v=2.6.14';
+import ui from './ui.js?v=2.6.14';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.6.14';
+import i18n from './i18n.js?v=2.6.14';
+import { SessionHistory } from './history.js?v=2.6.14';
+import ReferralSystem from './referral.js?v=2.6.14';
+import { Analytics } from './analytics.js?v=2.6.14';
+import { getEngagementStats, initLiveActivityPulse, getLiveWatching } from './social-signals.js?v=2.6.14';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -234,6 +234,7 @@ export async function init(id) {
       document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
       renderPostMeta(post, id);
       loadRelatedVideos(post);
+        loadRandomBottomVideos(post.studio);
       let durStr = post.duration || '';
       if (!durStr || durStr === '00:00:00') {
         durStr = getDeterministicDuration(post.id);
@@ -317,9 +318,7 @@ export async function init(id) {
               const pad = (n) => String(n).padStart(2, '0');
               return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
             };
-            setTimeout(() => {
-              ui.showToast(`${i18n.t('toast_resume_playback') || 'Resumed playback from'} ${formatTime(resumeSeconds)} ⏱️`);
-            }, 1000);
+            
           }
           
           // Hide the watch page loader shimmer when iframe is loaded
@@ -337,50 +336,8 @@ export async function init(id) {
           }
         };
 
-        // Deteksi apakah pengakses adalah bot pencari (seperti Googlebot)
-        const isBot = /bot|google|baidu|bing|msn|duckduckbot|teoma|slurp|yandex/i.test(navigator.userAgent);
-        
-        if (isBot) {
-          console.log('[SEO] Bot detected, loading player iframe immediately...');
-          loadRealVideo();
-        } else {
-          const secureThumb = ui.escapeHTML(ui.getProxiedThumbnail(post.thumbnail) || SVG_FALLBACK_THUMB);
-          const secureTitle = ui.escapeHTML(post.title || '');
-          const secureCode = ui.escapeHTML(post.code || '');
-          
-          playerContainer.innerHTML = `
-            <div class="player-custom-poster" id="player-custom-poster">
-              <div class="poster-bg" style="background-image: url('${secureThumb}');"></div>
-              <div class="poster-overlay"></div>
-              <div class="poster-play-btn-wrapper">
-                <button class="poster-play-btn" id="poster-play-btn" aria-label="${i18n.t('play_video') || 'Play Video'}">
-                  <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                </button>
-              </div>
-              <div class="poster-meta">
-                ${secureCode ? `<span class="poster-code">${secureCode}</span>` : ''}
-                <h2 class="poster-title">${i18n.translateVideoTitle(secureTitle)}</h2>
-              </div>
-            </div>
-          `;
-          
-          // Hide the watch page loader shimmer when poster is shown
-          const shimmer = document.querySelector('.player-container-placeholder .player-loading-shimmer');
-          if (shimmer) shimmer.style.display = 'none';
-
-          // Add play button click listener
-          const playBtn = document.getElementById('poster-play-btn');
-          if (playBtn) {
-            playBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              loadRealVideo();
-            });
-          }
-        }
+        loadRealVideo();
       }
-      
       const currentWatchId = typeof window.missavJGetCurrentWatchId === 'function'
         ? window.missavJGetCurrentWatchId()
         : new URLSearchParams(window.location.search).get('id');
@@ -1458,6 +1415,71 @@ function startPlaybackTracker(id, initialDuration) {
   }
   window._playerPlaybackMessageListener = handlePlayerMessage;
   window.addEventListener('message', handlePlayerMessage);
+}
+
+
+async function loadRandomBottomVideos(studioName) {
+  const grid = document.getElementById('player-random-grid');
+  if (!grid) return;
+  
+  // Tampilkan skeleton loader sebanyak 10 item (2 baris x 5 di desktop)
+  ui.showSkeletonsInElement(grid, 10);
+  
+  try {
+    const rawData = await api.getFeed(1);
+    const data = rawData && rawData.data ? rawData.data : rawData;
+    let allPosts = Array.isArray(data) ? data : [];
+    
+    // Filter out video yang sedang ditonton
+    const currentId = new URLSearchParams(window.location.search).get('id');
+    allPosts = allPosts.filter(p => String(p.id) !== String(currentId));
+    
+    // Prioritaskan studio yang sama jika ada, lalu campur dengan yang lain
+    let studioPosts = [];
+    let otherPosts = [];
+    
+    if (studioName) {
+      studioPosts = allPosts.filter(p => p.studio === studioName);
+      otherPosts = allPosts.filter(p => p.studio !== studioName);
+    } else {
+      otherPosts = allPosts;
+    }
+    
+    // Shuffle array (Fisher-Yates)
+    const shuffle = (arr) => {
+      let currentIndex = arr.length, randomIndex;
+      while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+        [arr[currentIndex], arr[randomIndex]] = [arr[randomIndex], arr[currentIndex]];
+      }
+      return arr;
+    };
+    
+    studioPosts = shuffle(studioPosts);
+    otherPosts = shuffle(otherPosts);
+    
+    // Ambil maksimal 10 video
+    let selectedPosts = [...studioPosts, ...otherPosts].slice(0, 10);
+    
+    // Jika tidak ada data
+    if (selectedPosts.length === 0) {
+      grid.innerHTML = '<div class="empty-state">Tidak ada rekomendasi video.</div>';
+      return;
+    }
+    
+    // Render menggunakan import dinamis dari feed.js
+    import('./feed.js?v=2.6.14').then(feedModule => {
+      // disableCinematic = true agar grid seragam
+      grid.innerHTML = selectedPosts.map((post, idx) => feedModule.renderVideoCard(post, idx, true)).join('');
+      ui.lazyLoadImages();
+      feedModule.bindHoverPreviews();
+    });
+    
+  } catch (err) {
+    console.error('Error loading random bottom videos:', err);
+    grid.innerHTML = `<div class="empty-state">${i18n.t('error_loading_feed')}</div>`;
+  }
 }
 
 export default { 

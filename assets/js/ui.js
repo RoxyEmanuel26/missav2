@@ -447,6 +447,13 @@ const ui = {
     html += `</ol>`;
     breadcrumbNav.innerHTML = html;
     breadcrumbNav.classList.remove('hidden');
+    
+    // Specifically tag the body if we are on the watch page for CSS scoping
+    if (routePath.startsWith('/watch')) {
+      document.body.classList.add('page-watch');
+    } else {
+      document.body.classList.remove('page-watch');
+    }
   }
 };
 

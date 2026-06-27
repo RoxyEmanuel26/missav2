@@ -5,12 +5,12 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.3.2';
-import ui from './ui.js?v=2.3.2';
-import filter from './filter.js?v=2.3.2';
-import i18n from './i18n.js?v=2.3.2';
-import { SessionHistory } from './history.js?v=2.3.2';
-import { getLiveWatching, getTrendingBadge } from './social-signals.js?v=2.3.2';
+import api from './api.js?v=2.6.14';
+import ui from './ui.js?v=2.6.14';
+import filter from './filter.js?v=2.6.14';
+import i18n from './i18n.js?v=2.6.14';
+import { SessionHistory } from './history.js?v=2.6.14';
+import { getLiveWatching, getTrendingBadge } from './social-signals.js?v=2.6.14';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -64,9 +64,10 @@ export function getDeterministicDuration(id) {
  * Renders single video card markup adhering to YouTube + apiJAV clean layout guidelines (Safe from XSS, featuring Staggered Delay)
  * @param {Object} post - API Video/post data object
  * @param {number} [index=0] - Card order index utilized for staggered animation delays
+ * @param {boolean} [disableCinematic=false] - Disable the cinematic feature
  * @returns {string} Sanitized HTML markup template string
  */
-export function renderVideoCard(post, index = 0) {
+export function renderVideoCard(post, index = 0, disableCinematic = false) {
   // 1. Sanitize API data to defeat XSS and translate the title dynamically
   const originalTitle = post.title || '';
   const translatedTitle = i18n.translateVideoTitle(originalTitle);
@@ -135,11 +136,13 @@ export function renderVideoCard(post, index = 0) {
   const viewsFormatted = viewsCount.toLocaleString(i18n.getLang());
 
   // Staggered animation delay
-  const animationStyle = `style="animation-delay: calc(${index % 24} * 45ms);"`;
+  // Removed artificial stagger animation delay to speed up perceived loading time
+  const animationStyle = ``;
 
   const safeEmbedUrl = ui.escapeHTML((post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&'));
 
-  const cardVariant = index === 0 ? 'card-cinematic' : 'card-editorial';
+  const isCinematic = !disableCinematic && index === 0 && window.innerWidth >= 768;
+  const cardVariant = isCinematic ? 'card-cinematic' : 'card-editorial';
   
   // Advanced Image Loading Strategy for Core Web Vitals
   const isLCP = index === 0;
@@ -168,7 +171,7 @@ export function renderVideoCard(post, index = 0) {
   const semanticHref = `/${currentLang}${watchUrl}`;
 
   // For cinematic card, overlay metadata is used. For editorial, it's below the thumb.
-  if (index === 0) {
+  if (isCinematic) {
     return `
       <div class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
         <a href="${semanticHref}" class="card-main-link" aria-label="Watch ${safeTitle}"></a>

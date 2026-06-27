@@ -420,7 +420,7 @@ img, video { display: block; max-width: 100%; }
 .niche-item:hover { border-color: var(--accent); background: var(--bg-elevated); transform: translateY(-1px); }
 .niche-item-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
 .niche-item-count { font-size: 11px; color: var(--text-tertiary); }
-.niche-loading { grid-column: 1/-1; display: flex; justify-content: center; padding: 40px 0; }
+.niche-loading { flex: 1 1 100%; display: flex; justify-content: center; padding: 40px 0; }
 
 /* --- Mute Indicator --- */
 .mute-indicator {

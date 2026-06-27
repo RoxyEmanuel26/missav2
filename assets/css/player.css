@@ -697,6 +697,13 @@ body:has(#floating-player-wrapper.mode-floating) .scroll-top-btn {
 
   .player-title {
     font-size: var(--text-base);
+    color: #ffffff;
+    text-shadow: 
+      -1px -1px 0 #000,  
+       1px -1px 0 #000,
+      -1px  1px 0 #000,
+       1px  1px 0 #000,
+       0px  2px 4px rgba(0,0,0,0.8);
   }
   
   .player-action-row {
