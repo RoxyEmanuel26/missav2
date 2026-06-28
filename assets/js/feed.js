@@ -5,12 +5,12 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.6.17';
-import ui from './ui.js?v=2.6.17';
-import filter from './filter.js?v=2.6.17';
-import i18n from './i18n.js?v=2.6.17';
-import { SessionHistory } from './history.js?v=2.6.17';
-import { getLiveWatching, getTrendingBadge } from './social-signals.js?v=2.6.17';
+import api from './api.js?v=2.6.27';
+import ui from './ui.js?v=2.6.27';
+import filter from './filter.js?v=2.6.27';
+import i18n from './i18n.js?v=2.6.27';
+import { SessionHistory } from './history.js?v=2.6.27';
+import { getLiveWatching, getTrendingBadge } from './social-signals.js?v=2.6.27';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;
@@ -141,7 +141,7 @@ export function renderVideoCard(post, index = 0, disableCinematic = false) {
 
   const safeEmbedUrl = ui.escapeHTML((post.embed_url || '').replace(/&#038;/g, '&').replace(/&amp;/g, '&'));
 
-  const isCinematic = false; // Disabled by user request for uniform grid design
+  const isCinematic = index === 0 && !disableCinematic;
   const cardVariant = 'card-editorial';
   
   // Advanced Image Loading Strategy for Core Web Vitals
@@ -171,55 +171,31 @@ export function renderVideoCard(post, index = 0, disableCinematic = false) {
 
   const semanticHref = `/${currentLang}${watchUrl}`;
 
-  // For cinematic card, overlay metadata is used. For editorial, it's below the thumb.
-  if (isCinematic) {
-    return `
-      <div class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
-        <a href="${semanticHref}" class="card-main-link" aria-label="Watch ${safeTitle}"></a>
-        <div class="card-thumb">
-          <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" ${imgAttributes}>
-          ${trendingBadgeMarkup || (post._isTrending ? `<span class="badge badge-trending">TRENDING</span>` : '')}
-          ${uncensoredBadge ? `<span class="badge badge-uncensored">${i18n.t('badge_uncensored')}</span>` : ''}
-          ${durationBadge ? `<span class="badge badge-duration">${safeDuration}</span>` : ''}
-          ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
-        </div>
-        <div class="card-info-overlay">
-          <div class="card-meta">
-            ${studioMarkup}
-            <span class="card-dot">•</span>
-            <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
-            <span class="card-code">${safeCode}</span>
-          </div>
-          ${socialProofHtml}
-          <h3 class="card-title" title="${safeTitle}" data-original-title="${safeOriginalTitleAttr}">${safeTitle}</h3>
-        </div>
+  const featuredClass = isCinematic ? 'card-featured' : '';
+
+  return `
+    <div class="video-card card-base ${cardVariant} ${featuredClass} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
+      <a href="${semanticHref}" class="card-main-link" aria-label="Watch ${safeTitle}"></a>
+      <div class="card-thumb">
+        <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" ${imgAttributes}>
+        ${trendingBadgeMarkup || (post._isTrending ? `<span class="badge badge-trending">TRENDING</span>` : '')}
+        ${uncensoredBadge ? `<span class="badge badge-uncensored">${i18n.t('badge_uncensored')}</span>` : ''}
+        ${durationBadge ? `<span class="badge badge-duration">${safeDuration}</span>` : ''}
+        ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
       </div>
-    `;
-  } else {
-    return `
-      <div class="video-card card-base ${cardVariant} fadeInUp" data-id="${safeId}" data-code="${safeCode}" data-title="${safeTitle}" data-embed-url="${safeEmbedUrl}" ${animationStyle}>
-        <a href="${semanticHref}" class="card-main-link" aria-label="Watch ${safeTitle}"></a>
-        <div class="card-thumb">
-          <img src="${safeThumbnail || SVG_FALLBACK_THUMB}" alt="${safeTitle}" ${imgAttributes}>
-          ${trendingBadgeMarkup || (post._isTrending ? `<span class="badge badge-trending">TRENDING</span>` : '')}
-          ${uncensoredBadge ? `<span class="badge badge-uncensored">${i18n.t('badge_uncensored')}</span>` : ''}
-          ${durationBadge ? `<span class="badge badge-duration">${safeDuration}</span>` : ''}
-          ${hdBadge ? `<span class="badge badge-hd">HD</span>` : ''}
+      <div class="card-info">
+        <h3 class="card-title" title="${safeTitle}" data-original-title="${safeOriginalTitleAttr}">${safeTitle}</h3>
+        <div class="card-meta">
+          ${studioMarkup}
+          <span class="card-dot">•</span>
+          <span class="card-code">${safeCode}</span>
+          <span class="card-dot">•</span>
+          <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
         </div>
-        <div class="card-info">
-          <h3 class="card-title" title="${safeTitle}" data-original-title="${safeOriginalTitleAttr}">${safeTitle}</h3>
-          <div class="card-meta">
-            ${studioMarkup}
-            <span class="card-dot">•</span>
-            <span class="card-code">${safeCode}</span>
-            <span class="card-dot">•</span>
-            <span class="card-views">${viewsFormatted} ${i18n.t('views')}</span>
-          </div>
-          ${socialProofHtml}
-        </div>
+        ${socialProofHtml}
       </div>
-    `;
-  }
+    </div>
+  `;
 }
 
 /**
@@ -352,10 +328,11 @@ export async function init(filters = {}, signal) {
         const watchUrl = window.missavJGetWatchUrl ? window.missavJGetWatchUrl(post.id, post.code, post.title) : `/watch/${post.id}`;
         const currentLang = i18n.getLang() || 'en';
         const semanticHref = `/${currentLang}${watchUrl}`;
+        const translatedTitle = i18n.translateVideoTitle(post.title || '');
 
         return `
           <div class="history-card-wrapper" id="history-card-${post.id}">
-            <a href="${semanticHref}" class="history-card" title="${ui.escapeHTML(post.title)}">
+            <a href="${semanticHref}" class="history-card" title="${ui.escapeHTML(translatedTitle)}">
               <div class="history-thumb">
                 <img src="${ui.getProxiedThumbnail(post.thumbnail)}" loading="lazy" style="aspect-ratio:16/9; width:100%; object-fit:cover; border-radius:8px;">
                 ${progressBar}
@@ -363,7 +340,7 @@ export async function init(filters = {}, signal) {
               </div>
               <div class="history-card-info">
                 ${post.code ? `<span class="history-code">${ui.escapeHTML(post.code)}</span>` : ''}
-                <div class="history-title" title="${ui.escapeHTML(post.title)}">${ui.escapeHTML(post.title)}</div>
+                <div class="history-title" title="${ui.escapeHTML(translatedTitle)}" data-original-title="${ui.escapeHTML(post.title || '')}">${ui.escapeHTML(translatedTitle)}</div>
               </div>
             </a>
             <button class="history-dismiss-btn" data-id="${post.id}" title="Remove from Continue Watching">✕</button>

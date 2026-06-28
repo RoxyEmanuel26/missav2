@@ -5,14 +5,14 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.6.17';
-import ui from './ui.js?v=2.6.17';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.6.17';
-import i18n from './i18n.js?v=2.6.17';
-import { SessionHistory } from './history.js?v=2.6.17';
-import ReferralSystem from './referral.js?v=2.6.17';
-import { Analytics } from './analytics.js?v=2.6.17';
-import { getEngagementStats, initLiveActivityPulse, getLiveWatching } from './social-signals.js?v=2.6.17';
+import api from './api.js?v=2.6.27';
+import ui from './ui.js?v=2.6.27';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.6.27';
+import i18n from './i18n.js?v=2.6.27';
+import { SessionHistory } from './history.js?v=2.6.27';
+import ReferralSystem from './referral.js?v=2.6.27';
+import { Analytics } from './analytics.js?v=2.6.27';
+import { getEngagementStats, initLiveActivityPulse, getLiveWatching } from './social-signals.js?v=2.6.27';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -66,7 +66,7 @@ function getSecureIframeMarkup(iframeHtml) {
  * Inisialisasi halaman player detail (Mendukung transplantasi balik tanpa reload iframe)
  * @param {string} id - ID Post / Video dari URL hash query
  */
-export async function init(id) {
+export async function init(id, signal) {
   if (!id) {
     ui.showError(i18n.t('invalid_video_id'));
     return;
@@ -178,7 +178,7 @@ export async function init(id) {
       <!-- Kolom Kanan: Rekomendasi Video Terkait & Iklan Sidebar -->
       <div class="player-sidebar-column">
         <div class="related-header-controls">
-          <h3>Community also watched</h3>
+          <h3></h3>
           <div class="autoplay-toggle-wrapper active" id="autoplay-toggle" title="Auto-Play next video">
             <span class="autoplay-label">Auto-Play</span>
             <div class="autoplay-switch"></div>
@@ -233,8 +233,8 @@ export async function init(id) {
       // Render metadata directly
       document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
       renderPostMeta(post, id);
-      loadRelatedVideos(post);
-        loadRandomBottomVideos(post.studio);
+      loadRelatedVideos(post, signal);
+        loadRandomBottomVideos(post.studio, signal);
       let durStr = post.duration || '';
       if (!durStr || durStr === '00:00:00') {
         durStr = getDeterministicDuration(post.id);
@@ -245,16 +245,16 @@ export async function init(id) {
     } else {
       // Fresh load of a new video
       const [fetchedPost, player] = await Promise.all([
-        api.getPost(id).catch(err => {
+        api.getPost(id, { signal }).catch(err => {
           console.warn('[API Warning] Failed to load post details, trying fallback...', err);
           return null;
         }),
-        api.getPlayer(id).catch(err => {
+        api.getPlayer(id, { signal }).catch(err => {
           console.warn('[API Warning] Failed to load player endpoint, trying fallback...', err);
           return null;
         })
       ]);
-      
+      if (signal && signal.aborted) return;
       if (!fetchedPost && !player) {
         throw new Error(i18n.t('error_failed_fetch_video_player'));
       }
@@ -345,7 +345,7 @@ export async function init(id) {
       if (window.missavJState.currentPath === '/watch' && String(currentWatchId) === String(id)) {
         document.title = `${i18n.translateVideoTitle(post.title)} — MISSAV-J`;
         renderPostMeta(post, id);
-        loadRelatedVideos(post);
+        loadRelatedVideos(post, signal);
       }
     }
 
@@ -384,7 +384,11 @@ function trackWatchHistory(post) {
  * Merender metadata lengkap video ke elemen DOM (Tersanitasi Penuh)
  */
 export function renderPostMeta(post, id) {
-  document.getElementById('player-title').textContent = post.title || 'Video Stream';
+  const titleEl = document.getElementById('player-title');
+  if (titleEl) {
+    titleEl.textContent = i18n.translateVideoTitle(post.title || 'Video Stream');
+    titleEl.dataset.originalTitle = post.title || 'Video Stream';
+  }
     
     // Convert views using ui.formatNumber
     const viewsNum = parseInt(post.views, 10) || 0;
@@ -739,7 +743,7 @@ function computeRelevanceScore(candidate, currentPost) {
  * Smart Related Videos Engine — Mencocokkan video berdasarkan aktor, seri kode, tag, dan kategori
  * dengan sistem skor relevansi dan badge visual alasan kecocokan.
  */
-export async function loadRelatedVideos(post) {
+export async function loadRelatedVideos(post, signal) {
   const relatedList = document.getElementById('related-videos-list');
   if (!relatedList) return;
 
@@ -756,34 +760,35 @@ export async function loadRelatedVideos(post) {
 
     // --- Query 1: Strict Relevance (Limit 8) ---
     if (post.actors && post.actors.length > 0) {
-      promises.push(api.getPosts({ actor: post.actors[0], per_page: 8 }));
+      promises.push(api.getPosts({ actor: post.actors[0], per_page: 8, signal }));
       queryLabels.push('actor:' + post.actors[0]);
       hasPrimary = true;
     } else if (post.code && post.code.trim() && extractCodeSeriesPrefix(post.code)) {
       const seriesPrefix = extractCodeSeriesPrefix(post.code);
-      promises.push(api.getPosts({ search: seriesPrefix, per_page: 8 }));
+      promises.push(api.getPosts({ search: seriesPrefix, per_page: 8, signal }));
       queryLabels.push('series:' + seriesPrefix);
       hasPrimary = true;
     }
 
     // --- Query 2: Lateral Discovery (Limit 8) ---
     if (post.tags && post.tags.length > 0) {
-      promises.push(api.getPosts({ tag: post.tags[0], per_page: 8 }));
+      promises.push(api.getPosts({ tag: post.tags[0], per_page: 8, signal }));
       queryLabels.push('tag:' + post.tags[0]);
     } else if (post.categories && post.categories.length > 0) {
-      promises.push(api.getPosts({ category: post.categories[0], per_page: 8 }));
+      promises.push(api.getPosts({ category: post.categories[0], per_page: 8, signal }));
       queryLabels.push('category:' + post.categories[0]);
     } else if (!hasPrimary) {
       // Absolute fallback if neither Actor/Series nor Tag/Category existed
       const keywords = extractTitleKeywords(post.title);
       if (keywords) {
-        promises.push(api.getPosts({ search: keywords, per_page: 12 }));
+        promises.push(api.getPosts({ search: keywords, per_page: 12, signal }));
         queryLabels.push('keywords:' + keywords);
       }
     }
 
     // Jalankan semua query secara paralel untuk efisiensi tinggi
     const results = await Promise.allSettled(promises);
+    if (signal && signal.aborted) return;
     
     // Gabungkan hasil dari semua query yang berhasil
     let allPosts = [];
@@ -847,6 +852,7 @@ export async function loadRelatedVideos(post) {
     if (finalPosts.length === 0 && post.categories && post.categories[0]) {
       try {
         const fallbackData = await api.getPosts({
+          signal,
           category: post.categories[0],
           orderby: 'views',
           order: 'DESC',
@@ -1427,7 +1433,7 @@ async function loadRandomBottomVideos(studioName) {
   ui.showSkeletonsInElement(grid, 10);
   
   try {
-    const rawData = await api.getFeed(1);
+    const rawData = await api.getFeed(1); // NOTE: getFeed might not support signal, ideally it should
     const data = rawData && rawData.data ? rawData.data : rawData;
     let allPosts = Array.isArray(data) ? data : [];
     
@@ -1470,7 +1476,7 @@ async function loadRandomBottomVideos(studioName) {
     }
     
     // Render menggunakan import dinamis dari feed.js
-    import('./feed.js?v=2.6.17').then(feedModule => {
+    import('./feed.js?v=2.6.27').then(feedModule => {
       // disableCinematic = true agar grid seragam
       grid.innerHTML = selectedPosts.map((post, idx) => feedModule.renderVideoCard(post, idx, true)).join('');
       ui.lazyLoadImages();

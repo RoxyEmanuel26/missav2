@@ -71,7 +71,7 @@ function renderSearchVideoCard(post, index) {
  * Inisialisasi Halaman Pencarian
  * @param {string} query - Kata kunci pencarian awal
  */
-export async function init(query = '') {
+export async function init(query = '', signal) {
   // Matikan observer dari navigasi sebelumnya
   if (intersectionObserver) {
     intersectionObserver.disconnect();
@@ -199,7 +199,8 @@ async function fetchAndRenderSearch(isInitial = false) {
     }
 
     const apiFilters = { ...currentFilters, search: apiQuery };
-    const data = await api.getPosts({ page: currentPage, ...apiFilters });
+    const data = await api.getPosts({ page: currentPage, ...apiFilters, signal });
+    if (signal && signal.aborted) { isLoading = false; return; }
     
     const grid = document.getElementById('search-video-grid');
     if (!grid) return;

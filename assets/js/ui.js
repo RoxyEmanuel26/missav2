@@ -44,14 +44,8 @@ const ui = {
                     window.location.hostname === 'localhost' || 
                     window.location.hostname === '127.0.0.1';
     if (isLocal) {
-      // Use a fast public image proxy on local to resize images (simulating production behavior)
-      // This prevents loading massive original images which causes slow perceived performance
-      try {
-        const cleanUrl = url.replace(/^https?:\/\//, '');
-        return `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&w=320&output=webp&we`;
-      } catch (e) {
-        return url;
-      }
+      // Use original image to avoid wsrv.nl 429 rate limit
+      return url;
     }
     try {
       // Base64 encode the URL to bypass AdBlocker keyword blocks on "apijav"

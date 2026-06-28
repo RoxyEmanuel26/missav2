@@ -9,7 +9,7 @@ import ui from './ui.js?v=2.3.2';
 
 // Konfigurasi Kunci Iklan
 window.missavJAdConfig = {
-  popunderEnabled: true,
+  popunderEnabled: false,
   socialBarEnabled: true,
   // Tentukan provider banner: 'exoclick', 'adsterra', atau 'none' untuk mematikan
   bannerProvider: 'adsterra',

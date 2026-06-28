@@ -9,10 +9,10 @@ import { init as initFeed } from './feed.js?v=2.3.2';
 /**
  * Inisialisasi Halaman Terbaru
  */
-export function init() {
+export function init(signal) {
   // Panggil feed utama dengan konfigurasi sort by date terbaru secara default
   return initFeed({
     orderby: 'date',
     order: 'DESC'
-  });
+  }, signal);
 }

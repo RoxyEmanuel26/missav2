@@ -1,24 +1,24 @@
-const CACHE_NAME = 'missavj-cache-v2.6.17';
+const CACHE_NAME = 'missavj-cache-v2.6.27';
 const API_CACHE_NAME = 'missavj-api-cache';
 const MAX_API_CACHE_ITEMS = 50;
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/assets/css/components.css?v=2.6.17',
-  '/assets/css/main.css?v=2.6.17',
-  '/assets/css/base.css?v=2.6.17',
-  '/assets/css/layout.css?v=2.6.17',
-  '/assets/css/player.css?v=2.6.17',
-  '/assets/js/app.js?v=2.6.17',
-  '/assets/js/api.js?v=2.6.17',
-  '/assets/js/feed.js?v=2.6.17',
-  '/assets/js/i18n.js?v=2.6.17',
-  '/assets/js/player.js?v=2.6.17',
-  '/assets/js/ui.js?v=2.6.17',
-  '/assets/js/ads.js?v=2.6.17',
-  '/assets/js/analytics.js?v=2.6.17',
-  '/assets/js/referral.js?v=2.6.17',
+  '/assets/css/components.css?v=2.6.27',
+  '/assets/css/main.css?v=2.6.27',
+  '/assets/css/base.css?v=2.6.27',
+  '/assets/css/layout.css?v=2.6.27',
+  '/assets/css/player.css?v=2.6.27',
+  '/assets/js/app.js?v=2.6.27',
+  '/assets/js/api.js?v=2.6.27',
+  '/assets/js/feed.js?v=2.6.27',
+  '/assets/js/i18n.js?v=2.6.27',
+  '/assets/js/player.js?v=2.6.27',
+  '/assets/js/ui.js?v=2.6.27',
+  '/assets/js/ads.js?v=2.6.27',
+  '/assets/js/analytics.js?v=2.6.27',
+  '/assets/js/referral.js?v=2.6.27',
   '/assets/images/logo.png',
   '/favicon.svg'
 ];

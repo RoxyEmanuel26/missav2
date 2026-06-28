@@ -25,12 +25,17 @@ export const LANGS = [
 
 // Kamus Terjemahan Komprehensif
 const DICTIONARY = {
+  // Footer Legal
+  footer_legal: { en: 'Legal', id: 'Legal', 'zh-TW': '法律聲明', 'zh-CN': '法律声明', ja: '法的情報', ko: '법적 고지', ms: 'Perundangan', th: 'กฎหมาย', de: 'Rechtliches', fr: 'Légal', vi: 'Pháp lý', fil: 'Ligal', pt: 'Legal' },
+  footer_2257: { en: '18 U.S.C. 2257', id: '18 U.S.C. 2257', 'zh-TW': '18 U.S.C. 2257', 'zh-CN': '18 U.S.C. 2257', ja: '18 U.S.C. 2257', ko: '18 U.S.C. 2257', ms: '18 U.S.C. 2257', th: '18 U.S.C. 2257', de: '18 U.S.C. 2257', fr: '18 U.S.C. 2257', vi: '18 U.S.C. 2257', fil: '18 U.S.C. 2257', pt: '18 U.S.C. 2257' },
+  footer_dmca: { en: 'DMCA Policy', id: 'Kebijakan DMCA', 'zh-TW': 'DMCA 政策', 'zh-CN': 'DMCA 政策', ja: 'DMCAポリシー', ko: 'DMCA 정책', ms: 'Dasar DMCA', th: 'นโยบาย DMCA', de: 'DMCA-Richtlinie', fr: 'Politique DMCA', vi: 'Chính sách DMCA', fil: 'Patakaran ng DMCA', pt: 'Política DMCA' },
+
   // Sidebar Navigasi
   nav_home: {
     en: 'Home', id: 'Beranda', 'zh-TW': '首頁', 'zh-CN': '首页', ja: 'ホーム', ko: '홈', ms: 'Utama', th: 'หน้าแรก', de: 'Startseite', fr: 'Accueil', vi: 'Trang chủ', fil: 'Tahanan', pt: 'Início'
   },
   nav_trending: {
-    en: 'Trending', id: 'Populer (Trending)', 'zh-TW': '熱門排行', 'zh-CN': '热门排行', ja: '急上昇', ko: '인기', ms: 'Sering Ditonton', th: 'ยอดนิยม', de: 'Angesagt', fr: 'Tendances', vi: 'Xu hướng', fil: 'Trending', pt: 'Tendências'
+    en: 'Trending', id: 'Trending', 'zh-TW': '熱門', 'zh-CN': '热门', ja: '急上昇', ko: '인기', ms: 'Trending', th: 'ยอดนิยม', de: 'Trending', fr: 'Tendances', vi: 'Xu hướng', fil: 'Trending', pt: 'Tendências'
   },
   nav_recent: {
     en: 'Recent', id: 'Terbaru', 'zh-TW': '最新發佈', 'zh-CN': '最新发布', ja: '新着', ko: '최신', ms: 'Baru', th: 'ล่าสุด', de: 'Neueste', fr: 'Récents', vi: 'Gần đây', fil: 'Kamakailan', pt: 'Recentes'
@@ -56,10 +61,10 @@ const DICTIONARY = {
     en: 'Explore', id: 'Jelajahi', 'zh-TW': '探索', 'zh-CN': '探索', ja: '探索', ko: '탐색', ms: 'Jelajahi', th: 'สำรวจ', de: 'Erkunden', fr: 'Explorer', vi: 'Khám phá', fil: 'Galugarin', pt: 'Explorar'
   },
   nav_all_actors: {
-    en: 'All Actors', id: 'Semua Aktor', 'zh-TW': '所有演員', 'zh-CN': '所有演员', ja: 'すべての女優', ko: '모든 배우', ms: 'Semua Pelakon', th: 'นักแสดงทั้งหมด', de: 'Alle Schauspieler', fr: 'Tous les acteurs', vi: 'Tất cả diễn viên', fil: 'Lahat ng Aktor', pt: 'Todos os atores'
+    en: 'Actors', id: 'Aktor', 'zh-TW': '演員', 'zh-CN': '演员', ja: '女優', ko: '배우', ms: 'Pelakon', th: 'นักแสดง', de: 'Schauspieler', fr: 'Acteurs', vi: 'Diễn viên', fil: 'Mga Aktor', pt: 'Atores'
   },
   nav_all_categories: {
-    en: 'All Categories', id: 'Semua Kategori', 'zh-TW': '所有分類', 'zh-CN': '所有分类', ja: 'すべてのカテゴリー', ko: '모든 카테고리', ms: 'Semua Kategori', th: 'หมวดหมู่ทั้งหมด', de: 'Alle Kategorien', fr: 'Toutes les catégories', vi: 'Tất cả danh mục', fil: 'Lahat ng Kategorya', pt: 'Todas as categorias'
+    en: 'Categories', id: 'Kategori', 'zh-TW': '分類', 'zh-CN': '分类', ja: 'カテゴリー', ko: '카테고리', ms: 'Kategori', th: 'หมวดหมู่', de: 'Kategorien', fr: 'Catégories', vi: 'Danh mục', fil: 'Mga Kategorya', pt: 'Categorias'
   },
   category_watch_jav: {
     en: 'Watch JAV', id: 'Tonton JAV', 'zh-TW': '觀看 JAV', 'zh-CN': '观看 JAV', ja: 'JAVを見る', ko: 'JAV 보기', ms: 'Tonton JAV', th: 'ดู JAV', de: 'JAV ansehen', fr: 'Regarder JAV', vi: 'Xem JAV', fil: 'Panoorin ang JAV', pt: 'Assistir JAV'
@@ -697,10 +702,6 @@ export function setLang(langCode, triggerRedirect = true) {
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
   
-  const activeLang = LANGS.find(l => l.code === langCode);
-  if (activeLang) {
-    ui.showToast(`Language set to ${activeLang.label}`);
-  }
 }
 
 /**
