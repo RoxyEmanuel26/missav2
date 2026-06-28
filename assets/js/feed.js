@@ -5,12 +5,12 @@
  * featuring complete XSS sanitization, premium inline SVG thumbnail fallbacks, and staggered delays.
  */
 
-import api from './api.js?v=2.6.32';
-import ui from './ui.js?v=2.6.32';
-import filter from './filter.js?v=2.6.32';
-import i18n from './i18n.js?v=2.6.32';
-import { SessionHistory } from './history.js?v=2.6.32';
-import { getLiveWatching, getTrendingBadge } from './social-signals.js?v=2.6.32';
+import api from './api.js?v=2.6.34';
+import ui from './ui.js?v=2.6.34';
+import filter from './filter.js?v=2.6.34';
+import i18n from './i18n.js?v=2.6.34';
+import { SessionHistory } from './history.js?v=2.6.34';
+import { getLiveWatching, getTrendingBadge } from './social-signals.js?v=2.6.34';
 
 // Feed State (In-memory, isolated per lifecycle page reload)
 let currentPage = 1;

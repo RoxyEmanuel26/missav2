@@ -5,14 +5,14 @@
  * dan penyimpanan Riwayat serta Tonton Nanti in-memory.
  */
 
-import api from './api.js?v=2.6.32';
-import ui from './ui.js?v=2.6.32';
-import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.6.32';
-import i18n from './i18n.js?v=2.6.32';
-import { SessionHistory } from './history.js?v=2.6.32';
-import ReferralSystem from './referral.js?v=2.6.32';
-import { Analytics } from './analytics.js?v=2.6.32';
-import { getEngagementStats, initLiveActivityPulse, getLiveWatching } from './social-signals.js?v=2.6.32';
+import api from './api.js?v=2.6.34';
+import ui from './ui.js?v=2.6.34';
+import { renderVideoCard, getDeterministicDuration } from './feed.js?v=2.6.34';
+import i18n from './i18n.js?v=2.6.34';
+import { SessionHistory } from './history.js?v=2.6.34';
+import ReferralSystem from './referral.js?v=2.6.34';
+import { Analytics } from './analytics.js?v=2.6.34';
+import { getEngagementStats, initLiveActivityPulse, getLiveWatching } from './social-signals.js?v=2.6.34';
 
 let playerInstance = null;
 // State like/dislike lokal in-memory
@@ -1476,7 +1476,7 @@ async function loadRandomBottomVideos(studioName) {
     }
     
     // Render menggunakan import dinamis dari feed.js
-    import('./feed.js?v=2.6.32').then(feedModule => {
+    import('./feed.js?v=2.6.34').then(feedModule => {
       // disableCinematic = true agar grid seragam
       grid.innerHTML = selectedPosts.map((post, idx) => feedModule.renderVideoCard(post, idx, true)).join('');
       ui.lazyLoadImages();

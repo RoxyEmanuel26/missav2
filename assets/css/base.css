@@ -6,13 +6,13 @@
 :root {
   /* Obsidian Dark Cinematic Palette */
   --color-bg: #030303;              /* Pure dark abyss */
-  --color-surface: #0A0A0A;         /* Base surface */
-  --color-surface-2: #121212;       /* Elevated surface */
-  --color-surface-3: #1A1A1A;       /* Interactive surface */
+  --color-surface: #101015;         /* Lighter base surface for card contrast */
+  --color-surface-2: #181822;       /* Elevated surface */
+  --color-surface-3: #222230;       /* Interactive surface */
   --bg-header: linear-gradient(to bottom, rgba(3,3,3,0.95) 0%, rgba(3,3,3,0.6) 100%);
   
-  --color-border: rgba(255, 255, 255, 0.04); 
-  --color-border-strong: rgba(255, 255, 255, 0.08);
+  --color-border: rgba(255, 255, 255, 0.06); 
+  --color-border-strong: rgba(255, 255, 255, 0.12);
   
   --color-text: #F8F8F8;            /* Crisp white */
   --color-text-muted: #888888;      /* Elegant grey for metadata */

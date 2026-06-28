@@ -1346,7 +1346,7 @@ body.theme-transitioning * {
   margin: 0 0 var(--space-6) 0;
   font-size: var(--text-sm);
   color: var(--color-text-muted);
-  background-color: var(--bg-surface);
+  background-color: var(--color-surface);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-lg);
 }
@@ -1384,17 +1384,17 @@ body.theme-transitioning * {
   display: flex;
   flex-direction: column;
   position: relative;
-  background: var(--bg-surface);
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .video-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-border-strong);
 }
 
 .video-card .card-main-link {
